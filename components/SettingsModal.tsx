@@ -81,7 +81,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onBackup, onRest
                     <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--cream-light)'}}>
                          <h4 className="font-semibold mb-3 text-md" style={{ color: 'var(--text-color)'}}>Connectivity</h4>
                          <div className="flex items-center justify-between">
-                            <span className="text-sm">Cloud Sync <small className="opacity-70">(Simulated)</small></span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm">Sync Across Tabs <small className="opacity-70">(Same Computer)</small></span>
+                                <i 
+                                    className="fas fa-info-circle text-gray-400 cursor-help" 
+                                    title="This syncs data between tabs on the same computer. A backend server is needed to sync between different devices.">
+                                </i>
+                            </div>
                             <label htmlFor="sync-toggle" className="flex items-center cursor-pointer">
                                 <div className="relative">
                                     <input type="checkbox" id="sync-toggle" className="sr-only" checked={isCloudSyncOn} onChange={onToggleCloudSync} />

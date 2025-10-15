@@ -23,9 +23,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, onLogout, onSea
                     </p>
                 </div>
                 {isCloudSyncOn && (
-                     <div className="flex items-center gap-2 text-green-600" title="Real-time cloud sync is active.">
-                        <i className="fas fa-cloud"></i>
-                        <span className="text-xs font-semibold">Synced</span>
+                     <div className="flex items-center gap-2 text-green-600" title="Data is actively syncing between open tabs on this computer.">
+                        <i className="fas fa-sync-alt"></i>
+                        <span className="text-xs font-semibold">Tab Sync</span>
                     </div>
                 )}
             </div>
