@@ -1,0 +1,5 @@
+{
+  "name": "Fiqh Academy Task Manager",
+  "description": "A comprehensive task and bill management dashboard for Fiqh Academy. Track daily, weekly, and monthly tasks across multiple campuses with real-time sync, role-based access, and data backup features.",
+  "requestFramePermissions": []
+}
