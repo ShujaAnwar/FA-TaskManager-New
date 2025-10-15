@@ -10,7 +10,6 @@ interface TaskItemProps {
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete, onToggleFix }) => {
-    const isAdmin = userRole === UserRole.Admin;
 
     return (
         <div className="flex items-center justify-between p-2 border-b transition-colors hover:bg-opacity-50" style={{ borderColor: 'var(--cream-dark)', color: 'var(--text-color)' }}>
@@ -29,16 +28,14 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete,
                 </label>
             </div>
             <div className="flex items-center ml-2 space-x-2">
-                {isAdmin && (
-                    <button
-                        onClick={onToggleFix}
-                        className="text-gray-500 hover:text-gray-700 text-xs opacity-70 hover:opacity-100 transition-opacity"
-                        aria-label={task.isFixed ? `Un-fix task ${task.description}` : `Fix task ${task.description}`}
-                        title={task.isFixed ? 'Un-fix task (makes it deletable)' : 'Fix task (prevents deletion)'}
-                    >
-                        <i className={`fas fa-thumbtack ${task.isFixed ? 'text-blue-600' : ''}`}></i>
-                    </button>
-                )}
+                <button
+                    onClick={onToggleFix}
+                    className="text-gray-500 hover:text-gray-700 text-xs opacity-70 hover:opacity-100 transition-opacity"
+                    aria-label={task.isFixed ? `Un-fix task ${task.description}` : `Fix task ${task.description}`}
+                    title={task.isFixed ? 'Un-fix task (makes it deletable)' : 'Fix task (prevents deletion)'}
+                >
+                    <i className={`fas fa-thumbtack ${task.isFixed ? 'text-blue-600' : ''}`}></i>
+                </button>
                 {!task.isFixed && (
                     <button
                         onClick={onDelete}
