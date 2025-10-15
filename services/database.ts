@@ -103,7 +103,7 @@ export const databaseService = {
     await delay(FAKE_LATENCY / 2);
     const db = getDb();
     const campusData = db[campusId];
-    if (campusData) {
+    if (campusData && campusData.bills[billIndex]) {
         campusData.bills[billIndex].paid = !campusData.bills[billIndex].paid;
         saveDb(db);
     }
@@ -114,7 +114,7 @@ export const databaseService = {
       await delay(FAKE_LATENCY);
       const db = getDb();
       const campusData = db[campusId];
-      if (campusData) {
+      if (campusData && campusData.bills[billIndex]) {
           campusData.bills[billIndex].attachment = fileUrl;
           saveDb(db);
       }
@@ -125,11 +125,26 @@ export const databaseService = {
       await delay(FAKE_LATENCY);
       const db = getDb();
       const campusData = db[campusId];
-      if (campusData) {
+      if (campusData && campusData.bills[billIndex]) {
           delete campusData.bills[billIndex].attachment;
           saveDb(db);
       }
       return db;
+  },
+
+  async addBill(campusId: CampusId, billData: Omit<Bill, 'paid' | 'attachment'>): Promise<AllCampusData> {
+    await delay(FAKE_LATENCY);
+    const db = getDb();
+    const campusData = db[campusId];
+    if (campusData && billData.type.trim() && billData.account.trim()) {
+        const newBill: Bill = {
+            ...billData,
+            paid: false,
+        };
+        db[campusId].bills.push(newBill);
+        saveDb(db);
+    }
+    return db;
   },
 
   // --- Reset & Backup/Restore Mutations ---

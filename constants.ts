@@ -45,7 +45,9 @@ export const INITIAL_DATA: AllCampusData = {
       { type: "K-Electric", location: "Main Campus", account: "0400030577416", paid: false },
       { type: "K-Electric", location: "Main Campus", account: "0400030577432", paid: false },
       { type: "SSGC (Gas)", location: "Main Campus", account: "2490615583", paid: false },
-      { type: "SSGC (Gas)", location: "Main Campus", account: "1477885228", paid: false }
+      { type: "SSGC (Gas)", location: "Main Campus", account: "1477885228", paid: false },
+      { type: "K-Electric", location: "Main Campus", account: "0400004749802", paid: false },
+      { type: "K-Electric", location: "Main Campus", account: "0400004749640", paid: false }
     ]
   },
   johar: {
@@ -103,7 +105,12 @@ export const INITIAL_DATA: AllCampusData = {
       { type: "PTCL", location: "Johar Campus", account: "021-34623474", paid: false },
       { type: "PTCL", location: "Johar Campus", account: "021-34633474", paid: false },
       { type: "K-Electric", location: "Johar Campus", account: "0400030577440", paid: false },
-      { type: "Jazz Sims", location: "Johar Campus", account: "Prepaid Sims", paid: false }
+      { type: "Jazz Sims", location: "Johar Campus", account: "Prepaid Sims", paid: false },
+      { type: "K-Electric", location: "Johar Campus", account: "0400030577416", paid: false },
+      { type: "K-Electric", location: "Johar Campus", account: "0400030577432", paid: false },
+      { type: "Storm Fiber", location: "Johar Campus", account: "0333-3265994", paid: false },
+      { type: "Storm Fiber", location: "Johar Campus", account: "0300-2225354", paid: false },
+      { type: "PTCL", location: "Johar Campus", account: "021-34613474", paid: false },
     ]
   },
   masjid: {

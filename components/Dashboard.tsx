@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Theme, CampusId, AllCampusData, TaskCategory, UserRole } from '../types';
+import { User, Theme, CampusId, AllCampusData, TaskCategory, UserRole, Bill } from '../types';
 import { databaseService } from '../services/database';
 import DashboardHeader from './DashboardHeader';
 import IslamicHeader from './IslamicHeader';
@@ -103,6 +103,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
 
   const onDeleteAttachment = async (campusId: CampusId, billIndex: number) => {
     const updatedData = await databaseService.deleteAttachment(campusId, billIndex);
+    setAllData(updatedData);
+  };
+
+  const onAddBill = async (campusId: CampusId, billData: Omit<Bill, 'paid'|'attachment'>) => {
+    const updatedData = await databaseService.addBill(campusId, billData);
     setAllData(updatedData);
   };
 
@@ -226,6 +231,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
                               campusData && <CampusView
                                   campusId={activeCampus}
                                   campusData={campusData}
+                                  allCampusData={activeCampus === CampusId.Main ? allData : undefined}
                                   userRole={user.role}
                                   onAddTask={onAddTask}
                                   onToggleTask={onToggleTask}
@@ -237,6 +243,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
                                   onMarkAllTodayComplete={onMarkAllTodayComplete}
                                   onAttachBill={onAttachBill}
                                   onDeleteAttachment={onDeleteAttachment}
+                                  onAddBill={onAddBill}
                               />
                           )}
                       </>
