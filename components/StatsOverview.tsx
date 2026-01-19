@@ -8,8 +8,15 @@ interface StatsOverviewProps {
 
 const StatsOverview: React.FC<StatsOverviewProps> = ({ allData }) => {
     const metrics = useMemo(() => {
-        const validCampuses = Object.values(allData).filter((c): c is CampusData => !!c);
-        const allTasks: Task[] = validCampuses.flatMap(c => Object.values(c.tasks).flat());
+        if (!allData) return { totalTasks: 0, completed: 0, inProgress: 0, efficiency: 0, workedToday: 0, Terry: 0, pending: 0 };
+        
+        // FIX: Cast 'c' to 'any' when checking for 'tasks' to avoid property access error on 'object' type.
+        const validCampuses = Object.values(allData).filter((c): c is CampusData => !!c && typeof c === 'object' && !!(c as any).tasks);
+        const allTasks: Task[] = validCampuses.flatMap(c => {
+            if (!c.tasks) return [];
+            return Object.values(c.tasks).flatMap(t => Array.isArray(t) ? t : []);
+        });
+        
         const todayStr = new Date().toLocaleDateString('en-CA');
         
         const completedTasks = allTasks.filter(t => t.status === TaskStatus.Completed);
@@ -21,7 +28,8 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ allData }) => {
 
         // Sum up worked time from all campuses for today
         const workedToday = validCampuses.reduce((sum, campus) => {
-            const record = campus.attendance?.find(a => a.date === todayStr);
+            if (!campus.attendance) return sum;
+            const record = campus.attendance.find(a => a.date === todayStr);
             if (record) {
                 if (record.totalWorkMinutes) return sum + record.totalWorkMinutes;
                 if (record.checkIn && !record.checkOut) {

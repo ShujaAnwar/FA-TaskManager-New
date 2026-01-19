@@ -13,6 +13,7 @@ import ThemeSelector from './ThemeSelector';
 import SearchResults from './SearchResults';
 import AllCampusesOverview from './AllCampusesOverview';
 import SettingsModal from './SettingsModal';
+import { INITIAL_DATA } from '../constants';
 
 interface DashboardProps {
   user: User;
@@ -38,10 +39,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchData = async () => {
-    if (isLoading) setIsLoading(true);
-    const data = await databaseService.getAllData();
-    setAllData(data);
-    if (isLoading) setIsLoading(false);
+    try {
+        setIsLoading(true);
+        const data = await databaseService.getAllData();
+        setAllData(data);
+    } catch (error) {
+        console.error("Critical error fetching dashboard data:", error);
+        // Fallback to initial constants to allow the UI to render
+        setAllData(JSON.parse(JSON.stringify(INITIAL_DATA)));
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -49,7 +57,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
     const syncChannel = new BroadcastChannel('dashboard-sync');
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === 'DATA_UPDATED') {
-        databaseService.getAllData().then(setAllData);
+        databaseService.getAllData().then(setAllData).catch(err => {
+            console.error("Sync error:", err);
+        });
       }
     };
     syncChannel.addEventListener('message', handleMessage);
@@ -97,6 +107,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
   const onGenerateReport = (type: 'Daily' | 'Monthly') => {
       if (!allData || !activeCampus || activeCampus === CampusId.ControlPanel) return;
       const campusData = allData[activeCampus];
+      if (!campusData) return;
       const tasks = Object.values(campusData.tasks).flat() as Task[];
       reportingService.generatePDF(user, activeCampus, tasks, type, campusData.attendance);
   };
@@ -163,7 +174,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
   const campusData = allData ? allData[activeCampus] : null;
 
   if (isLoading || !allData) {
-      return <div className="flex items-center justify-center min-h-screen"><i className="fas fa-spinner fa-spin fa-3x"></i></div>;
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen text-gray-500">
+            <i className="fas fa-spinner fa-spin fa-3x mb-4"></i>
+            <p className="animate-pulse">Initializing Command Center...</p>
+        </div>
+      );
   }
 
   return (

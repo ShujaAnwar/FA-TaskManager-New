@@ -22,30 +22,66 @@ const saveUsersToDb = (users: User[]) => {
 export const databaseService = {
   async getAllData(): Promise<AllCampusData> {
     await delay(FAKE_LATENCY);
-    const data = getDb();
+    let data = getDb();
     let migrated = false;
+
+    // Defensive check: If data is empty or invalid, reset to initial
+    if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+      data = JSON.parse(JSON.stringify(INITIAL_DATA));
+      saveDb(data);
+      return data;
+    }
+
     Object.keys(data).forEach(cid => {
         const campus = data[cid];
+        if (!campus || typeof campus !== 'object') return;
+
         if (!campus.attendance) { campus.attendance = []; migrated = true; }
+        if (!campus.tasks) { 
+          campus.tasks = { today: [], daily: [], weekly: [], monthly: [] }; 
+          migrated = true; 
+        }
+        
+        if (!campus.bills) { campus.bills = []; migrated = true; }
+
         Object.keys(campus.tasks).forEach(cat => {
-            campus.tasks[cat].forEach((t: Task) => {
-                if (!t.sessions) { t.sessions = []; migrated = true; }
-                if (!t.priority) { t.priority = Priority.Medium; migrated = true; }
+            const taskList = campus.tasks[cat as TaskCategory];
+            if (!Array.isArray(taskList)) {
+              campus.tasks[cat as TaskCategory] = [];
+              migrated = true;
+              return;
+            }
+            
+            taskList.forEach((t: any) => {
+                if (t && typeof t === 'object') {
+                    if (!t.sessions) { t.sessions = []; migrated = true; }
+                    if (t.priority === undefined) { t.priority = Priority.Medium; migrated = true; }
+                    if (t.status === undefined) { 
+                      t.status = t.completed ? TaskStatus.Completed : TaskStatus.Assigned; 
+                      migrated = true; 
+                    }
+                    if (t.actualMinutes === undefined) { t.actualMinutes = 0; migrated = true; }
+                    if (t.estimatedMinutes === undefined) { t.estimatedMinutes = 0; migrated = true; }
+                    if (t.createdAt === undefined) { t.createdAt = Date.now(); migrated = true; }
+                }
             });
         });
     });
+
     if (migrated) saveDb(data);
     return data;
   },
 
   async getAllUsers(): Promise<User[]> {
       await delay(FAKE_LATENCY);
-      return getUsersFromDb();
+      const users = getUsersFromDb();
+      return Array.isArray(users) ? users : [];
   },
 
   async toggleTask(campusId: CampusId, category: TaskCategory, taskId: string): Promise<AllCampusData> {
     const db = getDb();
     const campus = db[campusId];
+    if (!campus) return db;
     const task = campus.tasks[category].find(t => t.id === taskId);
     if (!task) return db;
 
@@ -71,6 +107,8 @@ export const databaseService = {
 
   async startTask(campusId: CampusId, category: TaskCategory, taskId: string): Promise<AllCampusData> {
       const db = getDb();
+      if (!db[campusId]) return db;
+      
       Object.keys(db[campusId].tasks).forEach(cat => {
           db[campusId].tasks[cat as TaskCategory].forEach(t => {
               if (t.status === TaskStatus.InProgress && t.id !== taskId) {
@@ -96,6 +134,7 @@ export const databaseService = {
 
   async pauseTask(campusId: CampusId, category: TaskCategory, taskId: string): Promise<AllCampusData> {
       const db = getDb();
+      if (!db[campusId]) return db;
       const task = db[campusId].tasks[category].find(t => t.id === taskId);
       if (task && task.status === TaskStatus.InProgress) {
           const last = task.sessions[task.sessions.length - 1];
@@ -111,6 +150,7 @@ export const databaseService = {
 
   async addTask(campusId: CampusId, category: TaskCategory, description: string, estMinutes: number = 0, priority: Priority = Priority.Medium): Promise<AllCampusData> {
     const db = getDb();
+    if (!db[campusId]) return db;
     const newTask: Task = {
         id: `${campusId.substring(0,2).toUpperCase()}-${category.substring(0,1).toUpperCase()}-${Date.now().toString().slice(-4)}`,
         description,
@@ -133,8 +173,7 @@ export const databaseService = {
       const campus = db[campusId];
       if (!campus) return db;
       
-      // Use local date string for better tracking in user's timezone
-      const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
+      const todayStr = new Date().toLocaleDateString('en-CA'); 
       
       if (!campus.attendance) campus.attendance = [];
       
@@ -157,55 +196,69 @@ export const databaseService = {
 
   async deleteTask(campusId: CampusId, category: TaskCategory, taskId: string): Promise<AllCampusData> {
       const db = getDb();
-      db[campusId].tasks[category] = db[campusId].tasks[category].filter(t => t.id !== taskId);
+      if (db[campusId]) {
+        db[campusId].tasks[category] = db[campusId].tasks[category].filter(t => t.id !== taskId);
+      }
       saveDb(db);
       return db;
   },
 
   async toggleTaskFix(campusId: CampusId, category: TaskCategory, taskId: string): Promise<AllCampusData> {
       const db = getDb();
-      const task = db[campusId].tasks[category].find(t => t.id === taskId);
-      if (task) task.isFixed = !task.isFixed;
+      if (db[campusId]) {
+        const task = db[campusId].tasks[category].find(t => t.id === taskId);
+        if (task) task.isFixed = !task.isFixed;
+      }
       saveDb(db);
       return db;
   },
 
   async markAllTodayComplete(campusId: CampusId): Promise<AllCampusData> {
       const db = getDb();
-      db[campusId].tasks.today = db[campusId].tasks.today.map(t => ({
-          ...t, 
-          completed: true, 
-          status: TaskStatus.Completed,
-          completedAt: Date.now()
-      }));
+      if (db[campusId]) {
+        db[campusId].tasks.today = db[campusId].tasks.today.map(t => ({
+            ...t, 
+            completed: true, 
+            status: TaskStatus.Completed,
+            completedAt: Date.now()
+        }));
+      }
       saveDb(db);
       return db;
   },
   
   async toggleBill(campusId: CampusId, billIndex: number): Promise<AllCampusData> {
     const db = getDb();
-    db[campusId].bills[billIndex].paid = !db[campusId].bills[billIndex].paid;
+    if (db[campusId] && db[campusId].bills[billIndex]) {
+      db[campusId].bills[billIndex].paid = !db[campusId].bills[billIndex].paid;
+    }
     saveDb(db);
     return db;
   },
 
   async attachBill(campusId: CampusId, billIndex: number, fileUrl: string): Promise<AllCampusData> {
       const db = getDb();
-      db[campusId].bills[billIndex].attachment = fileUrl;
+      if (db[campusId] && db[campusId].bills[billIndex]) {
+        db[campusId].bills[billIndex].attachment = fileUrl;
+      }
       saveDb(db);
       return db;
   },
 
   async deleteAttachment(campusId: CampusId, billIndex: number): Promise<AllCampusData> {
       const db = getDb();
-      delete db[campusId].bills[billIndex].attachment;
+      if (db[campusId] && db[campusId].bills[billIndex]) {
+        delete db[campusId].bills[billIndex].attachment;
+      }
       saveDb(db);
       return db;
   },
 
   async addBill(campusId: CampusId, billData: Omit<Bill, 'paid' | 'attachment'>): Promise<AllCampusData> {
     const db = getDb();
-    db[campusId].bills.push({ ...billData, paid: false });
+    if (db[campusId]) {
+      db[campusId].bills.push({ ...billData, paid: false });
+    }
     saveDb(db);
     return db;
   },
@@ -235,11 +288,16 @@ export const databaseService = {
   },
 
   async restoreData(jsonContent: string): Promise<void> {
-    const backup = JSON.parse(jsonContent);
-    if (backup.data && backup.users) {
-        cloudStore.setData(backup.data);
-        cloudStore.setUsers(backup.users);
-        syncChannel.postMessage({ type: 'DATA_UPDATED' });
+    try {
+      const backup = JSON.parse(jsonContent);
+      if (backup.data && backup.users) {
+          cloudStore.setData(backup.data);
+          cloudStore.setUsers(backup.users);
+          syncChannel.postMessage({ type: 'DATA_UPDATED' });
+      }
+    } catch (e) {
+      console.error("Failed to restore data:", e);
+      alert("Invalid backup file format.");
     }
   },
 
