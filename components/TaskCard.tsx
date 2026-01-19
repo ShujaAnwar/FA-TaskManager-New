@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Task, CampusId, TaskCategory, UserRole } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Task, CampusId, TaskCategory, UserRole, Priority } from '../types';
 import TaskItem from './TaskItem';
 
 interface TaskCardProps {
@@ -9,7 +9,7 @@ interface TaskCardProps {
     campusId: CampusId;
     category: TaskCategory;
     userRole: UserRole;
-    onAddTask: (campusId: CampusId, category: TaskCategory, description: string, estMinutes: number) => void;
+    onAddTask: (campusId: CampusId, category: TaskCategory, description: string, estMinutes: number, priority: Priority) => void;
     onToggleTask: (campusId: CampusId, category: TaskCategory, taskId: string) => void;
     onToggleTaskFix: (campusId: CampusId, category: TaskCategory, taskId: string) => void;
     onDeleteTask: (campusId: CampusId, category: TaskCategory, taskId: string) => void;
@@ -24,31 +24,51 @@ const DURATION_OPTIONS = [
     { label: '30 mins', value: 30 },
     { label: '45 mins', value: 45 },
     { label: '1 hour', value: 60 },
-    { label: '1.5 hours', value: 90 },
     { label: '2 hours', value: 120 },
-    { label: '3 hours', value: 180 },
     { label: '4 hours', value: 240 },
-    { label: '5 hours', value: 300 },
-    { label: '6 hours', value: 360 },
     { label: '8 hours', value: 480 },
-    { label: '12 hours', value: 720 },
-    { label: '24 hours', value: 1440 },
+];
+
+const PRIORITY_OPTIONS = [
+    { label: 'Low', value: Priority.Low, color: 'text-gray-500' },
+    { label: 'Medium', value: Priority.Medium, color: 'text-blue-500' },
+    { label: 'High', value: Priority.High, color: 'text-orange-500' },
+    { label: 'Urgent', value: Priority.Urgent, color: 'text-red-600 font-black' },
 ];
 
 const TaskCard: React.FC<TaskCardProps> = ({ title, tasks, campusId, category, userRole, onAddTask, onToggleTask, onDeleteTask, onToggleTaskFix, onStartTask, onPauseTask }) => {
     const [newTask, setNewTask] = useState('');
     const [estMinutes, setEstMinutes] = useState('0');
+    const [priority, setPriority] = useState<Priority>(Priority.Medium);
 
     const handleAddTask = () => {
         if (!newTask.trim()) return;
-        onAddTask(campusId, category, newTask, parseInt(estMinutes) || 0);
+        onAddTask(campusId, category, newTask, parseInt(estMinutes) || 0, priority);
         setNewTask('');
         setEstMinutes('0');
+        setPriority(Priority.Medium);
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleAddTask();
     };
+
+    // Sort tasks by priority and completion status
+    const sortedTasks = useMemo(() => {
+        const priorityOrder = {
+            [Priority.Urgent]: 0,
+            [Priority.High]: 1,
+            [Priority.Medium]: 2,
+            [Priority.Low]: 3,
+        };
+
+        return [...tasks].sort((a, b) => {
+            // First show uncompleted tasks
+            if (a.completed !== b.completed) return a.completed ? 1 : -1;
+            // Then sort by priority
+            return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
+        });
+    }, [tasks]);
 
     return (
         <div className="flex flex-col rounded-xl shadow-lg transition-transform hover:transform hover:-translate-y-1" style={{ backgroundColor: 'var(--card-bg)' }}>
@@ -58,32 +78,40 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, tasks, campusId, category, u
                     {tasks.length}
                 </span>
             </div>
-            <div className="p-2 space-y-2" style={{ backgroundColor: 'var(--cream-light)'}}>
+            <div className="p-2 space-y-2 border-b" style={{ backgroundColor: 'var(--cream-light)'}}>
                 <div className="flex gap-2">
                     <input
                         type="text"
                         value={newTask}
                         onChange={(e) => setNewTask(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        placeholder="Add new task..."
+                        placeholder="Assign new objective..."
                         className="flex-grow p-1.5 text-xs border rounded focus:ring-2 focus:ring-blue-400 focus:outline-none"
                     />
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="flex items-center text-[10px] font-bold text-gray-500 uppercase">Est:</div>
+                    <select 
+                        value={priority} 
+                        onChange={e => setPriority(e.target.value as Priority)} 
+                        className="w-1/3 p-1 text-[11px] border rounded bg-white focus:outline-none focus:ring-1 focus:ring-red-400 font-bold"
+                    >
+                        {PRIORITY_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
                     <select 
                         value={estMinutes} 
                         onChange={e => setEstMinutes(e.target.value)} 
-                        className="flex-grow p-1 text-[11px] border rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        className="w-1/3 p-1 text-[11px] border rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
                     >
-                        <option value="0">Duration</option>
+                        <option value="0">Est. Time</option>
                         {DURATION_OPTIONS.map(opt => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>
                     <button 
                         onClick={handleAddTask} 
-                        className="flex-grow text-white py-1 px-3 text-xs font-semibold rounded shadow-sm hover:opacity-90 active:scale-95 transition-all" 
+                        className="w-1/3 text-white py-1 px-3 text-xs font-semibold rounded shadow-sm hover:opacity-90 active:scale-95 transition-all" 
                         style={{ backgroundColor: 'var(--primary)' }}
                     >
                         Assign
@@ -91,8 +119,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, tasks, campusId, category, u
                 </div>
             </div>
             <div className="flex-grow overflow-y-auto max-h-[300px]">
-                {tasks.length > 0 ? (
-                    tasks.map(task => (
+                {sortedTasks.length > 0 ? (
+                    sortedTasks.map(task => (
                         <TaskItem
                             key={task.id}
                             task={task}
@@ -105,7 +133,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, tasks, campusId, category, u
                         />
                     ))
                 ) : (
-                    <p className="p-4 text-xs text-center text-gray-500">No tasks here.</p>
+                    <p className="p-4 text-xs text-center text-gray-500 italic">No tasks assigned to this category.</p>
                 )}
             </div>
         </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Theme, CampusId, AllCampusData, TaskCategory, UserRole, Bill, Task } from '../types';
+import { User, Theme, CampusId, AllCampusData, TaskCategory, UserRole, Bill, Task, Priority } from '../types';
 import { databaseService } from '../services/database';
 import { reportingService } from '../services/reporting';
 import DashboardHeader from './DashboardHeader';
@@ -45,7 +45,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
         setAllData(data);
     } catch (error) {
         console.error("Critical error fetching dashboard data:", error);
-        // Fallback to initial constants to allow the UI to render
         setAllData(JSON.parse(JSON.stringify(INITIAL_DATA)));
     } finally {
         setIsLoading(false);
@@ -74,8 +73,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
     setAllData(updatedData);
   };
 
-  const onAddTask = async (campusId: CampusId, category: TaskCategory, description: string, estMinutes: number = 0) => {
-    const updatedData = await databaseService.addTask(campusId, category, description, estMinutes);
+  const onAddTask = async (campusId: CampusId, category: TaskCategory, description: string, estMinutes: number = 0, priority: Priority = Priority.Medium) => {
+    const updatedData = await databaseService.addTask(campusId, category, description, estMinutes, priority);
     setAllData(updatedData);
   };
   

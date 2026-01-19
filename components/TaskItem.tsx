@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Task, UserRole, TaskStatus } from '../types';
+import { Task, UserRole, TaskStatus, Priority } from '../types';
 
 interface TaskItemProps {
     task: Task;
@@ -28,7 +28,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete,
         return () => clearInterval(interval);
     }, [task.status, task.timerStartedAt]);
 
-    const displayActual = task.actualMinutes + liveMinutes;
+    const displayActual = (task.actualMinutes || 0) + liveMinutes;
     const efficiency = task.estimatedMinutes > 0 && task.status === TaskStatus.Completed
         ? Math.round((task.estimatedMinutes / Math.max(1, task.actualMinutes)) * 100)
         : null;
@@ -42,6 +42,15 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete,
         }
     };
 
+    const getPriorityBadge = (p: Priority) => {
+        switch (p) {
+            case Priority.Urgent: return <span className="text-[8px] bg-red-600 text-white px-1 rounded font-black uppercase">Urgent</span>;
+            case Priority.High: return <span className="text-[8px] bg-orange-500 text-white px-1 rounded font-black uppercase">High</span>;
+            case Priority.Low: return <span className="text-[8px] bg-gray-400 text-white px-1 rounded font-black uppercase">Low</span>;
+            default: return null;
+        }
+    };
+
     const getEfficiencyColor = (eff: number) => {
         if (eff >= 100) return 'text-green-600';
         if (eff >= 90) return 'text-blue-600';
@@ -49,7 +58,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete,
     };
 
     return (
-        <div className="flex flex-col p-2 border-b transition-colors hover:bg-gray-50" style={{ borderColor: 'var(--cream-dark)', color: 'var(--text-color)' }}>
+        <div className={`flex flex-col p-2 border-b transition-colors hover:bg-white/40 ${task.priority === Priority.Urgent && !task.completed ? 'border-l-4 border-l-red-600' : ''}`} style={{ borderColor: 'var(--cream-dark)', color: 'var(--text-color)' }}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center flex-grow min-w-0">
                     <input
@@ -58,11 +67,12 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete,
                         onChange={onToggle}
                         className="mr-2 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
                     />
-                    <div className={`flex flex-col min-w-0 ${task.completed ? 'opacity-60' : ''}`}>
-                         <div className="flex items-center gap-1">
+                    <div className={`flex flex-col min-w-0 ${task.completed ? 'opacity-50' : ''}`}>
+                         <div className="flex items-center gap-1.5 flex-wrap">
+                            {getPriorityBadge(task.priority)}
                             {task.isFixed && <i className="fas fa-lock text-[10px] text-gray-400"></i>}
-                            <span className="font-bold text-[10px]" style={{ color: 'var(--primary)'}}>{task.id}</span>
-                            <span className={`text-xs font-semibold ${task.completed ? 'line-through' : ''}`}>{task.description}</span>
+                            <span className="font-bold text-[10px] whitespace-nowrap" style={{ color: 'var(--primary)'}}>{task.id}</span>
+                            <span className={`text-xs font-semibold break-words ${task.completed ? 'line-through' : ''}`}>{task.description}</span>
                          </div>
                          <div className="flex items-center gap-2 mt-1">
                             <span className={`text-[9px] text-white px-1.5 rounded-full uppercase font-bold ${getStatusColor()}`}>
@@ -80,7 +90,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete,
                     </div>
                 </div>
                 
-                <div className="flex items-center ml-2 space-x-1">
+                <div className="flex items-center ml-2 space-x-1 shrink-0">
                     {!task.completed && (
                         <>
                             {task.status !== TaskStatus.InProgress ? (

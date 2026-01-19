@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CampusId, UserRole, AttendanceRecord } from '../types';
 
 interface QuickActionsCardProps {
@@ -17,6 +17,39 @@ const QuickActionsCard: React.FC<QuickActionsCardProps> = ({ campusId, userRole,
     // Consistent use of local date string
     const todayStr = new Date().toLocaleDateString('en-CA');
     const record = attendance?.find(a => a.date === todayStr);
+    
+    const [liveDuration, setLiveDuration] = useState('00:00:00');
+
+    useEffect(() => {
+        let interval: number;
+        
+        if (record?.checkIn && !record?.checkOut) {
+            const updateTimer = () => {
+                const diffMs = Date.now() - record.checkIn!;
+                const totalSecs = Math.floor(diffMs / 1000);
+                const h = Math.floor(totalSecs / 3600);
+                const m = Math.floor((totalSecs % 3600) / 60);
+                const s = totalSecs % 60;
+                setLiveDuration(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+            };
+            
+            updateTimer();
+            interval = window.setInterval(updateTimer, 1000);
+        } else if (record?.checkIn && record?.checkOut) {
+            const diffMs = record.checkOut - record.checkIn;
+            const totalSecs = Math.floor(diffMs / 1000);
+            const h = Math.floor(totalSecs / 3600);
+            const m = Math.floor((totalSecs % 3600) / 60);
+            const s = totalSecs % 60;
+            setLiveDuration(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+        } else {
+            setLiveDuration('00:00:00');
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [record?.checkIn, record?.checkOut]);
 
     return (
         <div className="rounded-xl shadow-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
@@ -31,6 +64,16 @@ const QuickActionsCard: React.FC<QuickActionsCardProps> = ({ campusId, userRole,
                             {record?.checkOut ? 'Signed Out' : record?.checkIn ? 'Signed In' : 'Not Logged'}
                         </span>
                     </div>
+
+                    {record?.checkIn && (
+                        <div className="mb-3 p-2 rounded-lg bg-gray-100/50 dark:bg-black/20 border border-gray-200/50 flex flex-col items-center justify-center">
+                            <span className="text-[9px] font-black uppercase text-gray-400 tracking-tighter mb-1">Present Time</span>
+                            <span className={`text-2xl font-mono font-black tabular-nums ${record?.checkOut ? 'text-gray-500' : 'text-blue-600'}`}>
+                                {liveDuration}
+                            </span>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-2">
                         <button
                             disabled={!!record?.checkIn}

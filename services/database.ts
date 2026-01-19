@@ -25,7 +25,6 @@ export const databaseService = {
     let data = getDb();
     let migrated = false;
 
-    // Defensive check: If data is empty or invalid, reset to initial
     if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
       data = JSON.parse(JSON.stringify(INITIAL_DATA));
       saveDb(data);
