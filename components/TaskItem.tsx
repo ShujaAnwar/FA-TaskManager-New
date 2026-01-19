@@ -1,5 +1,6 @@
-import React from 'react';
-import { Task, UserRole } from '../types';
+
+import React, { useState, useEffect } from 'react';
+import { Task, UserRole, TaskStatus } from '../types';
 
 interface TaskItemProps {
     task: Task;
@@ -7,44 +8,101 @@ interface TaskItemProps {
     onToggle: () => void;
     onDelete: () => void;
     onToggleFix: () => void;
+    onStart: () => void;
+    onPause: () => void;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete, onToggleFix }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete, onToggleFix, onStart, onPause }) => {
+    const [liveMinutes, setLiveMinutes] = useState(0);
+
+    useEffect(() => {
+        let interval: number;
+        if (task.status === TaskStatus.InProgress && task.timerStartedAt) {
+            interval = window.setInterval(() => {
+                const elapsed = Date.now() - (task.timerStartedAt || 0);
+                setLiveMinutes(Math.floor(elapsed / 60000));
+            }, 10000); // Check every 10s
+        } else {
+            setLiveMinutes(0);
+        }
+        return () => clearInterval(interval);
+    }, [task.status, task.timerStartedAt]);
+
+    const displayActual = task.actualMinutes + liveMinutes;
+    const efficiency = task.estimatedMinutes > 0 && task.status === TaskStatus.Completed
+        ? Math.round((task.estimatedMinutes / Math.max(1, task.actualMinutes)) * 100)
+        : null;
+
+    const getStatusColor = () => {
+        switch (task.status) {
+            case TaskStatus.InProgress: return 'bg-green-500';
+            case TaskStatus.Paused: return 'bg-yellow-500';
+            case TaskStatus.Completed: return 'bg-blue-500';
+            default: return 'bg-gray-400';
+        }
+    };
+
+    const getEfficiencyColor = (eff: number) => {
+        if (eff >= 100) return 'text-green-600';
+        if (eff >= 90) return 'text-blue-600';
+        return 'text-red-600';
+    };
 
     return (
-        <div className="flex items-center justify-between p-2 border-b transition-colors hover:bg-opacity-50" style={{ borderColor: 'var(--cream-dark)', color: 'var(--text-color)' }}>
-            <div className="flex items-center flex-grow min-w-0">
-                <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={onToggle}
-                    id={`task-${task.id}`}
-                    className="mr-2 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
-                />
-                <label htmlFor={`task-${task.id}`} className={`flex-grow min-w-0 break-words cursor-pointer flex items-center ${task.completed ? 'line-through opacity-60' : ''}`}>
-                    {task.isFixed && <i className="fas fa-lock text-xs mr-2 text-gray-400" title="This task is fixed and cannot be deleted by users."></i>}
-                    <span className="font-bold text-xs mr-1" style={{ color: 'var(--primary)'}}>{task.id}</span>
-                    <span className="text-xs">{task.description}</span>
-                </label>
-            </div>
-            <div className="flex items-center ml-2 space-x-2">
-                <button
-                    onClick={onToggleFix}
-                    className="text-gray-500 hover:text-gray-700 text-xs opacity-70 hover:opacity-100 transition-opacity"
-                    aria-label={task.isFixed ? `Un-fix task ${task.description}` : `Fix task ${task.description}`}
-                    title={task.isFixed ? 'Un-fix task (makes it deletable)' : 'Fix task (prevents deletion)'}
-                >
-                    <i className={`fas fa-thumbtack ${task.isFixed ? 'text-blue-600' : ''}`}></i>
-                </button>
-                {!task.isFixed && (
-                    <button
-                        onClick={onDelete}
-                        className="text-red-500 hover:text-red-700 text-xs opacity-70 hover:opacity-100 transition-opacity"
-                        aria-label={`Delete task ${task.description}`}
-                    >
-                        <i className="fas fa-times"></i>
+        <div className="flex flex-col p-2 border-b transition-colors hover:bg-gray-50" style={{ borderColor: 'var(--cream-dark)', color: 'var(--text-color)' }}>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center flex-grow min-w-0">
+                    <input
+                        type="checkbox"
+                        checked={task.completed}
+                        onChange={onToggle}
+                        className="mr-2 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <div className={`flex flex-col min-w-0 ${task.completed ? 'opacity-60' : ''}`}>
+                         <div className="flex items-center gap-1">
+                            {task.isFixed && <i className="fas fa-lock text-[10px] text-gray-400"></i>}
+                            <span className="font-bold text-[10px]" style={{ color: 'var(--primary)'}}>{task.id}</span>
+                            <span className={`text-xs font-semibold ${task.completed ? 'line-through' : ''}`}>{task.description}</span>
+                         </div>
+                         <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-[9px] text-white px-1.5 rounded-full uppercase font-bold ${getStatusColor()}`}>
+                                {task.status.replace('_', ' ')}
+                            </span>
+                            <span className="text-[9px] text-gray-500 font-mono">
+                                Est: {task.estimatedMinutes}m | Act: {displayActual}m
+                            </span>
+                            {efficiency !== null && (
+                                <span className={`text-[9px] font-bold ${getEfficiencyColor(efficiency)}`}>
+                                    Eff: {efficiency}%
+                                </span>
+                            )}
+                         </div>
+                    </div>
+                </div>
+                
+                <div className="flex items-center ml-2 space-x-1">
+                    {!task.completed && (
+                        <>
+                            {task.status !== TaskStatus.InProgress ? (
+                                <button onClick={onStart} className="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Start Timer">
+                                    <i className="fas fa-play text-xs"></i>
+                                </button>
+                            ) : (
+                                <button onClick={onPause} className="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded" title="Pause Timer">
+                                    <i className="fas fa-pause text-xs"></i>
+                                </button>
+                            )}
+                        </>
+                    )}
+                    <button onClick={onToggleFix} className="p-1.5 text-gray-400 hover:text-blue-600 rounded" title="Fix/Unfix">
+                        <i className={`fas fa-thumbtack text-xs ${task.isFixed ? 'text-blue-600' : ''}`}></i>
                     </button>
-                )}
+                    {!task.isFixed && (
+                        <button onClick={onDelete} className="p-1.5 text-red-400 hover:text-red-600 rounded">
+                            <i className="fas fa-times text-xs"></i>
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

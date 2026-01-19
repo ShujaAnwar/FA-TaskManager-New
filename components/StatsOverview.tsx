@@ -1,49 +1,79 @@
 
 import React, { useMemo } from 'react';
-import { AllCampusData, TaskCategory, Task, Bill, CampusData } from '../types';
-import StatsCard from './StatsCard';
+import { AllCampusData, Task, Bill, CampusData, TaskStatus } from '../types';
 
 interface StatsOverviewProps {
     allData: AllCampusData;
 }
 
-const calculateProgress = (items: (Task | Bill)[], predicate: (item: any) => boolean) => {
-    if (items.length === 0) return 0;
-    const completed = items.filter(predicate).length;
-    return Math.round((completed / items.length) * 100);
-};
-
-
 const StatsOverview: React.FC<StatsOverviewProps> = ({ allData }) => {
-    const stats = useMemo(() => {
-        // FIX: Filter out undefined campus data using a type guard.
-        // AllCampusData can have undefined entries, which caused type errors and potential runtime crashes.
-        // This ensures we only process valid CampusData objects.
+    const metrics = useMemo(() => {
         const validCampuses = Object.values(allData).filter((c): c is CampusData => !!c);
+        const allTasks: Task[] = validCampuses.flatMap(c => Object.values(c.tasks).flat());
+        const todayStr = new Date().toLocaleDateString('en-CA');
+        
+        const completedTasks = allTasks.filter(t => t.status === TaskStatus.Completed);
+        const inProgressCount = allTasks.filter(t => t.status === TaskStatus.InProgress).length;
+        
+        const totalEst = completedTasks.reduce((sum, t) => sum + (t.estimatedMinutes || 0), 0);
+        const totalAct = completedTasks.reduce((sum, t) => sum + (t.actualMinutes || 0), 0);
+        const efficiency = totalAct > 0 ? Math.round((totalEst / totalAct) * 100) : 0;
 
-        const allTasks: Task[] = validCampuses.flatMap(campus => 
-            Object.values(campus.tasks).flat()
-        );
-        const allBills: Bill[] = validCampuses.flatMap(campus => campus.bills);
-
-        const dailyTasks = allTasks.filter(t => t.id.startsWith('D-') || t.id.startsWith('JD-') || t.id.endsWith('-today'));
-        const weeklyTasks = allTasks.filter(t => t.id.startsWith('W-') || t.id.startsWith('JW-') || t.id.startsWith('MSJ-W') || t.id.startsWith('MKT-W'));
-        const monthlyTasks = allTasks.filter(t => t.id.startsWith('M-') || t.id.startsWith('JM-') || t.id.startsWith('MSJ-') || t.id.startsWith('MKT-'));
+        // Sum up worked time from all campuses for today
+        const workedToday = validCampuses.reduce((sum, campus) => {
+            const record = campus.attendance?.find(a => a.date === todayStr);
+            if (record) {
+                if (record.totalWorkMinutes) return sum + record.totalWorkMinutes;
+                if (record.checkIn && !record.checkOut) {
+                    // Estimate live time for the summary
+                    return sum + Math.round((Date.now() - record.checkIn) / 60000);
+                }
+            }
+            return sum;
+        }, 0);
 
         return {
-            daily: calculateProgress(dailyTasks, item => item.completed),
-            weekly: calculateProgress(weeklyTasks, item => item.completed),
-            monthly: calculateProgress(monthlyTasks, item => item.completed),
-            bills: calculateProgress(allBills, item => item.paid),
+            totalTasks: allTasks.length,
+            completed: completedTasks.length,
+            inProgress: inProgressCount,
+            efficiency,
+            workedToday,
+            pending: allTasks.filter(t => t.status === TaskStatus.Assigned || t.status === TaskStatus.Paused).length
         };
     }, [allData]);
 
+    const getEfficiencyColor = (eff: number) => {
+        if (eff >= 100) return 'text-green-400';
+        if (eff >= 80) return 'text-blue-400';
+        return 'text-red-400';
+    };
+
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <StatsCard icon="fas fa-sun" title="Daily Progress" value={`${stats.daily}%`} />
-            <StatsCard icon="fas fa-calendar-week" title="Weekly Progress" value={`${stats.weekly}%`} />
-            <StatsCard icon="fas fa-calendar-alt" title="Monthly Progress" value={`${stats.monthly}%`} />
-            <StatsCard icon="fas fa-file-invoice-dollar" title="Bills Paid" value={`${stats.bills}%`} />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            <div className="p-4 rounded-xl border border-white/10 backdrop-blur-md shadow-inner bg-white/5 flex flex-col items-center justify-center transition hover:bg-white/10">
+                <span className="text-2xl font-black text-white">{metrics.totalTasks}</span>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mt-1">Total Tasks</span>
+            </div>
+            <div className="p-4 rounded-xl border border-white/10 backdrop-blur-md shadow-inner bg-white/5 flex flex-col items-center justify-center transition hover:bg-white/10">
+                <span className="text-2xl font-black text-blue-400">{metrics.inProgress}</span>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mt-1">Live Active</span>
+            </div>
+            <div className="p-4 rounded-xl border border-white/10 backdrop-blur-md shadow-inner bg-white/5 flex flex-col items-center justify-center transition hover:bg-white/10">
+                <span className="text-2xl font-black text-green-400">{metrics.completed}</span>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mt-1">Completed</span>
+            </div>
+            <div className="p-4 rounded-xl border border-white/10 backdrop-blur-md shadow-inner bg-white/5 flex flex-col items-center justify-center transition hover:bg-white/10">
+                <span className="text-2xl font-black text-yellow-500">{metrics.pending}</span>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mt-1">Pending</span>
+            </div>
+            <div className="p-4 rounded-xl border border-white/10 backdrop-blur-md shadow-inner bg-white/5 flex flex-col items-center justify-center transition hover:bg-white/10">
+                <span className={`text-2xl font-black ${getEfficiencyColor(metrics.efficiency)}`}>{metrics.efficiency}%</span>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mt-1">Efficiency</span>
+            </div>
+            <div className="p-4 rounded-xl border border-white/10 backdrop-blur-md shadow-inner bg-white/5 flex flex-col items-center justify-center transition hover:bg-white/10">
+                <span className="text-2xl font-black text-purple-400">{Math.floor(metrics.workedToday / 60)}h {metrics.workedToday % 60}m</span>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mt-1">Work Duration</span>
+            </div>
         </div>
     );
 };

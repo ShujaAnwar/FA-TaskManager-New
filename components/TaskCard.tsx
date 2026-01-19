@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Task, CampusId, TaskCategory, UserRole } from '../types';
 import TaskItem from './TaskItem';
@@ -8,32 +9,46 @@ interface TaskCardProps {
     campusId: CampusId;
     category: TaskCategory;
     userRole: UserRole;
-    onAddTask: (campusId: CampusId, category: TaskCategory, description: string) => void;
+    onAddTask: (campusId: CampusId, category: TaskCategory, description: string, estMinutes: number) => void;
     onToggleTask: (campusId: CampusId, category: TaskCategory, taskId: string) => void;
     onToggleTaskFix: (campusId: CampusId, category: TaskCategory, taskId: string) => void;
     onDeleteTask: (campusId: CampusId, category: TaskCategory, taskId: string) => void;
+    onStartTask?: (campusId: CampusId, category: TaskCategory, taskId: string) => void;
+    onPauseTask?: (campusId: CampusId, category: TaskCategory, taskId: string) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ title, tasks, campusId, category, userRole, onAddTask, onToggleTask, onDeleteTask, onToggleTaskFix }) => {
+const DURATION_OPTIONS = [
+    { label: '5 mins', value: 5 },
+    { label: '10 mins', value: 10 },
+    { label: '15 mins', value: 15 },
+    { label: '30 mins', value: 30 },
+    { label: '45 mins', value: 45 },
+    { label: '1 hour', value: 60 },
+    { label: '1.5 hours', value: 90 },
+    { label: '2 hours', value: 120 },
+    { label: '3 hours', value: 180 },
+    { label: '4 hours', value: 240 },
+    { label: '5 hours', value: 300 },
+    { label: '6 hours', value: 360 },
+    { label: '8 hours', value: 480 },
+    { label: '12 hours', value: 720 },
+    { label: '24 hours', value: 1440 },
+];
+
+const TaskCard: React.FC<TaskCardProps> = ({ title, tasks, campusId, category, userRole, onAddTask, onToggleTask, onDeleteTask, onToggleTaskFix, onStartTask, onPauseTask }) => {
     const [newTask, setNewTask] = useState('');
+    const [estMinutes, setEstMinutes] = useState('0');
 
     const handleAddTask = () => {
-        onAddTask(campusId, category, newTask);
+        if (!newTask.trim()) return;
+        onAddTask(campusId, category, newTask, parseInt(estMinutes) || 0);
         setNewTask('');
+        setEstMinutes('0');
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            handleAddTask();
-        }
+        if (e.key === 'Enter') handleAddTask();
     };
-    
-    // Do not render the card if there are no fixed tasks and no user-added tasks
-    if (tasks.length === 0 && category !== TaskCategory.Today) {
-        const hasFixedTasks = tasks.some(t => t.isFixed);
-        if (!hasFixedTasks) return null;
-    }
-
 
     return (
         <div className="flex flex-col rounded-xl shadow-lg transition-transform hover:transform hover:-translate-y-1" style={{ backgroundColor: 'var(--card-bg)' }}>
@@ -43,22 +58,39 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, tasks, campusId, category, u
                     {tasks.length}
                 </span>
             </div>
-            <div className="p-2" style={{ backgroundColor: 'var(--cream-light)'}}>
-                <div className="flex">
+            <div className="p-2 space-y-2" style={{ backgroundColor: 'var(--cream-light)'}}>
+                <div className="flex gap-2">
                     <input
                         type="text"
                         value={newTask}
                         onChange={(e) => setNewTask(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="Add new task..."
-                        className="flex-grow p-1.5 text-xs border rounded-l-md focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                        className="flex-grow p-1.5 text-xs border rounded focus:ring-2 focus:ring-blue-400 focus:outline-none"
                     />
-                    <button onClick={handleAddTask} className="text-white px-3 text-xs font-semibold rounded-r-md" style={{ backgroundColor: 'var(--primary)' }}>
-                        Add
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center text-[10px] font-bold text-gray-500 uppercase">Est:</div>
+                    <select 
+                        value={estMinutes} 
+                        onChange={e => setEstMinutes(e.target.value)} 
+                        className="flex-grow p-1 text-[11px] border rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+                    >
+                        <option value="0">Duration</option>
+                        {DURATION_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+                    <button 
+                        onClick={handleAddTask} 
+                        className="flex-grow text-white py-1 px-3 text-xs font-semibold rounded shadow-sm hover:opacity-90 active:scale-95 transition-all" 
+                        style={{ backgroundColor: 'var(--primary)' }}
+                    >
+                        Assign
                     </button>
                 </div>
             </div>
-            <div className="flex-grow overflow-y-auto">
+            <div className="flex-grow overflow-y-auto max-h-[300px]">
                 {tasks.length > 0 ? (
                     tasks.map(task => (
                         <TaskItem
@@ -68,10 +100,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, tasks, campusId, category, u
                             onToggle={() => onToggleTask(campusId, category, task.id)}
                             onDelete={() => onDeleteTask(campusId, category, task.id)}
                             onToggleFix={() => onToggleTaskFix(campusId, category, task.id)}
+                            onStart={() => onStartTask?.(campusId, category, task.id)}
+                            onPause={() => onPauseTask?.(campusId, category, task.id)}
                         />
                     ))
                 ) : (
-                    <p className="p-4 text-xs text-center text-gray-500">No tasks for this category.</p>
+                    <p className="p-4 text-xs text-center text-gray-500">No tasks here.</p>
                 )}
             </div>
         </div>

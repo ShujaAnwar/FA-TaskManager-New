@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { User } from '../types';
 import useDateTime from '../hooks/useDateTime';
@@ -13,11 +14,42 @@ interface DashboardHeaderProps {
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, onLogout, onSearch, onOpenSettings, isCloudSyncOn }) => {
     const { date, time } = useDateTime();
 
+    const handleShareMyLogin = async () => {
+        const shareText = `Fiqh Academy Task Manager Credentials:\n\nName: ${user.name}\nUsername: ${user.username}\nPassword: (Use your secure password)\n\nLogin here: ${window.location.origin}${window.location.pathname}`;
+        
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Fiqh Academy Access',
+                    text: shareText,
+                });
+            } catch (err) {
+                console.error("Share failed", err);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(shareText);
+                alert("Login info (without password) copied to clipboard!");
+            } catch (err) {
+                alert("Failed to copy info.");
+            }
+        }
+    };
+
     return (
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--cream-light)' }}>
             <div className="flex-grow flex items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold" style={{ color: 'var(--primary)'}}>Welcome, {user.name}!</h2>
+                    <h2 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--primary)'}}>
+                        Welcome, {user.name}!
+                        <button 
+                            onClick={handleShareMyLogin}
+                            className="text-sm p-1 hover:text-blue-500 transition-colors opacity-70"
+                            title="Share my login info"
+                        >
+                            <i className="fas fa-share-alt"></i>
+                        </button>
+                    </h2>
                     <p className="text-sm opacity-80" style={{ color: 'var(--text-color)'}}>
                         You are logged in as {user.role === 'admin' ? 'an Admin' : `a Campus User for ${user.campusId.charAt(0).toUpperCase() + user.campusId.slice(1)}`}.
                     </p>

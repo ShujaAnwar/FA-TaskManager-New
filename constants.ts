@@ -1,6 +1,5 @@
 
-
-import { AllCampusData, User, UserRole, CampusId, Theme } from './types';
+import { AllCampusData, User, UserRole, CampusId, Theme, TaskStatus, Priority } from './types';
 
 export const USERS: User[] = [
   { id: 1, username: 'main', password: 'password', name: 'Shuja Anwar Ahmed Hashmi', role: UserRole.Admin, campusId: CampusId.Main },
@@ -14,27 +13,27 @@ export const INITIAL_DATA: AllCampusData = {
     tasks: {
       today: [],
       daily: [
-        { id: "D-01", description: "Donation & Receipt Management", isFixed: true, completed: false },
-        { id: "D-02", description: "Coin Box Management", isFixed: true, completed: false },
-        { id: "D-03", description: "Expense Recording", isFixed: true, completed: false },
-        { id: "D-04", description: "Daily Cash Reconciliation", isFixed: true, completed: false },
-        { id: "D-05", description: "Security Guard Payment Processing", isFixed: true, completed: false }
+        { id: "D-01", description: "Donation & Receipt Management", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "D-02", description: "Coin Box Management", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "D-03", description: "Expense Recording", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "D-04", description: "Daily Cash Reconciliation", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "D-05", description: "Security Guard Payment Processing", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] }
       ],
       weekly: [
-        { id: "W-01", description: "Bank Reconciliation - All Campuses", isFixed: true, completed: false },
-        { id: "W-02", description: "All-Campus Shortfall Report", isFixed: true, completed: false },
-        { id: "W-03", description: "Expense Verification", isFixed: true, completed: false },
-        { id: "W-04", description: "Petty Cash Checking & Reimbursement", isFixed: true, completed: false },
-        { id: "W-05", description: "Bank Reconciliation - Main Campus", isFixed: true, completed: false }
+        { id: "W-01", description: "Bank Reconciliation - All Campuses", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "W-02", description: "All-Campus Shortfall Report", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "W-03", description: "Expense Verification", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "W-04", description: "Petty Cash Checking & Reimbursement", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "W-05", description: "Bank Reconciliation - Main Campus", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] }
       ],
       monthly: [
-        { id: "M-01", description: "Utility Bill Payments", isFixed: true, completed: false },
-        { id: "M-02", description: "Financial Reporting", isFixed: true, completed: false },
-        { id: "M-03", description: "Tax Payments", isFixed: true, completed: false },
-        { id: "M-04", description: "Zakat Fund Adjustment", isFixed: true, completed: false },
-        { id: "M-05", description: "Construction Payments", isFixed: true, completed: false },
-        { id: "M-06", description: "Bank Reconciliation - Main Campus", isFixed: true, completed: false },
-        { id: "M-07", description: "Security Guard Salary Processing", isFixed: true, completed: false }
+        { id: "M-01", description: "Utility Bill Payments", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "M-02", description: "Financial Reporting", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "M-03", description: "Tax Payments", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "M-04", description: "Zakat Fund Adjustment", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "M-05", description: "Construction Payments", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "M-06", description: "Bank Reconciliation - Main Campus", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "M-07", description: "Security Guard Salary Processing", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] }
       ],
     },
     bills: [
@@ -48,57 +47,57 @@ export const INITIAL_DATA: AllCampusData = {
       { type: "SSGC (Gas)", location: "Main Campus", account: "1477885228", paid: false },
       { type: "K-Electric", location: "Main Campus", account: "0400004749802", paid: false },
       { type: "K-Electric", location: "Main Campus", account: "0400004749640", paid: false }
-    ]
+    ],
+    attendance: []
   },
   johar: {
     tasks: {
       today: [],
       daily: [
-        { id: "JD-01", description: "Petty Cash Management", isFixed: true, completed: false },
-        { id: "JD-02", description: "Campus Maintenance", isFixed: true, completed: false },
-        { id: "JD-03", description: "Petty Cash Checking & Reimbursement", isFixed: true, completed: false },
-        { id: "JD-04", description: "Security Guard Payment Processing", isFixed: true, completed: false },
-        { id: "JCL-D-01", description: "Dusting Every Office On Daily Base.", isFixed: true, completed: false },
-        { id: "JCL-D-02", description: "Puncha On Ground Floor Daily.", isFixed: true, completed: false },
-        { id: "JCL-D-03", description: "Stairs Cleaning Daily.", isFixed: true, completed: false },
-        { id: "JCL-D-04", description: "Top Floor Washroom Cleaning Daily.", isFixed: true, completed: false },
-        { id: "JCL-D-05", description: "Roof Cleaning Daily.", isFixed: true, completed: false }
+        { id: "JD-01", description: "Petty Cash Management", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JD-02", description: "Campus Maintenance", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JD-03", description: "Petty Cash Checking & Reimbursement", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JD-04", description: "Security Guard Payment Processing", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-D-01", description: "Dusting Every Office On Daily Base.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-D-02", description: "Puncha On Ground Floor Daily.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-D-03", description: "Stairs Cleaning Daily.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-D-04", description: "Top Floor Washroom Cleaning Daily.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-D-05", description: "Roof Cleaning Daily.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] }
       ],
       weekly: [
-        { id: "JW-01", description: "Johar Campus Reporting", isFixed: true, completed: false },
-        { id: "JW-02", description: "Bank Reconciliation - Johar Campus", isFixed: true, completed: false },
-        { id: "JCL-W-01", description: "Dewan E Aaam Cleaning With Machine (Thursday for Islahi Majlees).", isFixed: true, completed: false },
-        { id: "JCL-W-02", description: "Mudeer Office Cleaning With Machine.", isFixed: true, completed: false },
-        { id: "JCL-W-03", description: "Book Shop Cleaning With Machine.", isFixed: true, completed: false },
-        { id: "JCL-W-04", description: "Account Office Cleaning With Machine.", isFixed: true, completed: false },
-        { id: "JCL-W-05", description: "Office Of Ladies Cleaning With Machine.", isFixed: true, completed: false },
-        { id: "JCL-W-06", description: "Basement Cleaning With Machine.", isFixed: true, completed: false },
-        { id: "JCL-W-07", description: "Ladies Street and Door Cleaning With Jaro.", isFixed: true, completed: false },
-        { id: "JCL-W-08", description: "Office Of Teachers Cleaning With Machine.", isFixed: true, completed: false },
-        { id: "JCL-W-09", description: "Nazra Class also Cleaning With Machine.", isFixed: true, completed: false },
-        { id: "JCL-W-10", description: "Hifz Class Cleaning With Machine.", isFixed: true, completed: false },
-        { id: "JCL-W-11", description: "Cleaning Every Room Washroom Weekly.", isFixed: true, completed: false },
-        { id: "JKT-W-01", description: "Cleaning Kitchen after three days (twice a week).", isFixed: true, completed: false },
-        { id: "JKT-W-02", description: "Weekly Vegetable procurement.", isFixed: true, completed: false },
-        { id: "JKT-W-03", description: "On every Tuesday and Saturday (2KG) Yogurt for Breakfast.", isFixed: true, completed: false },
-        { id: "JKT-W-04", description: "On every Thursday (2KG) Yogurt + Raita ingredients for Dinner.", isFixed: true, completed: false },
-        { id: "JKT-W-05", description: "On every Saturday (2KG) Yogurt + Raita ingredients for Lunch.", isFixed: true, completed: false },
-        { id: "JKT-W-06", description: "On every Friday Some Vegetable Masala.", isFixed: true, completed: false },
-        { id: "JKT-W-07", description: "On every Friday and Sunday Eggs for Break Fast.", isFixed: true, completed: false },
+        { id: "JW-01", description: "Johar Campus Reporting", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JW-02", description: "Bank Reconciliation - Johar Campus", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-W-01", description: "Dewan E Aaam Cleaning With Machine (Thursday for Islahi Majlees).", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-W-02", description: "Mudeer Office Cleaning With Machine.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-W-03", description: "Book Shop Cleaning With Machine.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-W-04", description: "Account Office Cleaning With Machine.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-W-05", description: "Office Of Ladies Cleaning With Machine.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-W-06", description: "Basement Cleaning With Machine.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-W-07", description: "Ladies Street and Door Cleaning With Jaro.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-W-08", description: "Office Of Teachers Cleaning With Machine.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-W-09", description: "Nazra Class also Cleaning With Machine.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-W-10", description: "Hifz Class Cleaning With Machine.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-W-11", description: "Cleaning Every Room Washroom Weekly.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JKT-W-01", description: "Cleaning Kitchen after three days (twice a week).", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JKT-W-02", description: "Weekly Vegetable procurement.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JKT-W-03", description: "On every Tuesday and Saturday (2KG) Yogurt for Breakfast.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JKT-W-04", description: "On every Thursday (2KG) Yogurt + Raita ingredients for Dinner.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JKT-W-05", description: "On every Saturday (2KG) Yogurt + Raita ingredients for Lunch.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JKT-W-06", description: "On every Friday Some Vegetable Masala.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JKT-W-07", description: "On every Friday and Sunday Eggs for Break Fast.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
       ],
       monthly: [
-        { id: "JM-01", description: "Staff Salary Processing", isFixed: true, completed: false },
-        // FIX: Corrected a typo in the object key from `id::` to `id:`.
-        { id: "JM-02", description: "Inventory Management", isFixed: true, completed: false },
-        { id: "JM-03", description: "Bank Reconciliation - Johar Campus", isFixed: true, completed: false },
-        { id: "JM-04", description: "Security Guard Salary Processing", isFixed: true, completed: false },
-        { id: "JCL-M-01", description: "Cleaning Glasses in Ground Floor.", isFixed: true, completed: false },
-        { id: "JCL-M-02", description: "Cleaning Every Closet in all building.", isFixed: true, completed: false },
-        { id: "JCL-M-03", description: "Cleaning Every AC Filter in a Month.", isFixed: true, completed: false },
-        { id: "JCL-M-04", description: "Cleaning Every Mat in washrooms monthly.", isFixed: true, completed: false },
-        { id: "JCL-M-05", description: "Cleaning all the doors in Building.", isFixed: true, completed: false },
-        { id: "JKT-M-01", description: "Ordering Ration Monthly.", isFixed: true, completed: false },
-        { id: "JTR-M-01", description: "Karwan Car: Change Oil, Oil Filter, Air Filter After 3000KM.", isFixed: true, completed: false }
+        { id: "JM-01", description: "Staff Salary Processing", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JM-02", description: "Inventory Management", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JM-03", description: "Bank Reconciliation - Johar Campus", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JM-04", description: "Security Guard Salary Processing", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-M-01", description: "Cleaning Glasses in Ground Floor.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-M-02", description: "Cleaning Every Closet in all building.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-M-03", description: "Cleaning Every AC Filter in a Month.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-M-04", description: "Cleaning Every Mat in washrooms monthly.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JCL-M-05", description: "Cleaning all the doors in Building.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JKT-M-01", description: "Ordering Ration Monthly.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "JTR-M-01", description: "Karwan Car: Change Oil, Oil Filter, Air Filter After 3000KM.", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] }
       ]
     },
     bills: [
@@ -111,36 +110,38 @@ export const INITIAL_DATA: AllCampusData = {
       { type: "Storm Fiber", location: "Johar Campus", account: "0333-3265994", paid: false },
       { type: "Storm Fiber", location: "Johar Campus", account: "0300-2225354", paid: false },
       { type: "PTCL", location: "Johar Campus", account: "021-34613474", paid: false },
-    ]
+    ],
+    attendance: []
   },
   masjid: {
     tasks: {
       today: [],
       daily: [],
       weekly: [
-        { id: "MSJ-W01", description: "Bank Reconciliation - Masjid Campus", isFixed: true, completed: false }
+        { id: "MSJ-W01", description: "Bank Reconciliation - Masjid Campus", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] }
       ],
       monthly: [
-        { id: "MSJ-01", description: "Masjid Maintenance Funds", isFixed: true, completed: false },
-        { id: "MSJ-02", description: "Monthly Report for Namazi Hazrat", isFixed: true, completed: false },
-        { id: "MSJ-03", description: "Monthly Tauqeel Process - Masjid Campus", isFixed: true, completed: false }
+        { id: "MSJ-01", description: "Masjid Maintenance Funds", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "MSJ-02", description: "Monthly Report for Namazi Hazrat", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "MSJ-03", description: "Monthly Tauqeel Process - Masjid Campus", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] }
       ]
     },
     bills: [
       { type: "PTCL", location: "Masjid Shafeeq ur Rahman", account: "021-34152794", paid: false },
       { type: "K-Electric", location: "Masjid Shafeeq ur Rahman", account: "0400041707966", paid: false }
-    ]
+    ],
+    attendance: []
   },
   maktab: {
     tasks: {
       today: [],
       daily: [],
       weekly: [
-        { id: "MKT-W01", description: "Bank Reconciliation - Maktab Campus", isFixed: true, completed: false }
+        { id: "MKT-W01", description: "Bank Reconciliation - Maktab Campus", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] }
       ],
       monthly: [
-        { id: "MKT-01", description: "Maktab Operations Funding", isFixed: true, completed: false },
-        { id: "MKT-02", description: "Educational Materials", isFixed: true, completed: false }
+        { id: "MKT-01", description: "Maktab Operations Funding", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] },
+        { id: "MKT-02", description: "Educational Materials", isFixed: true, completed: false, status: TaskStatus.Assigned, estimatedMinutes: 0, actualMinutes: 0, createdAt: Date.now(), priority: Priority.Medium, sessions: [] }
       ]
     },
     bills: [
@@ -151,7 +152,8 @@ export const INITIAL_DATA: AllCampusData = {
         { type: "K-Electric", location: "Maktab Campus", account: "0400044902360 - C.No # LB516525", paid: false },
         { type: "K-Electric", location: "Maktab Campus", account: "0400044902352 - C.No # LB516524", paid: false },
         { type: "K-Electric", location: "Maktab Campus", account: "0400044902379 - C.No # LB516526", paid: false }
-    ]
+    ],
+    attendance: []
   }
 };
 

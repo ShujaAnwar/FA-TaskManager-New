@@ -1,11 +1,10 @@
-import { AllCampusData, User, Task, Bill, CampusId, TaskCategory } from '../types';
+
+import { AllCampusData, User, Task, Bill, CampusId, TaskCategory, TaskStatus, AttendanceRecord, Priority } from '../types';
 import { cloudStore } from './cloudStore';
 import { INITIAL_DATA } from '../constants';
 
-const FAKE_LATENCY = 150; // ms for simulated network delay
-
+const FAKE_LATENCY = 30; 
 const syncChannel = new BroadcastChannel('dashboard-sync');
-
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 const getDb = (): AllCampusData => cloudStore.getData();
@@ -23,7 +22,20 @@ const saveUsersToDb = (users: User[]) => {
 export const databaseService = {
   async getAllData(): Promise<AllCampusData> {
     await delay(FAKE_LATENCY);
-    return getDb();
+    const data = getDb();
+    let migrated = false;
+    Object.keys(data).forEach(cid => {
+        const campus = data[cid];
+        if (!campus.attendance) { campus.attendance = []; migrated = true; }
+        Object.keys(campus.tasks).forEach(cat => {
+            campus.tasks[cat].forEach((t: Task) => {
+                if (!t.sessions) { t.sessions = []; migrated = true; }
+                if (!t.priority) { t.priority = Priority.Medium; migrated = true; }
+            });
+        });
+    });
+    if (migrated) saveDb(data);
+    return data;
   },
 
   async getAllUsers(): Promise<User[]> {
@@ -31,125 +43,174 @@ export const databaseService = {
       return getUsersFromDb();
   },
 
-  // --- Task Mutations ---
   async toggleTask(campusId: CampusId, category: TaskCategory, taskId: string): Promise<AllCampusData> {
-    await delay(FAKE_LATENCY / 2);
     const db = getDb();
-    const campusData = db[campusId];
-    if (campusData) {
-      const newTasks = campusData.tasks[category].map(t =>
-        t.id === taskId ? { ...t, completed: !t.completed } : t
-      );
-      db[campusId].tasks[category] = newTasks;
-      saveDb(db);
+    const campus = db[campusId];
+    const task = campus.tasks[category].find(t => t.id === taskId);
+    if (!task) return db;
+
+    const isCompleting = !task.completed;
+    if (isCompleting) {
+        if (task.status === TaskStatus.InProgress && task.sessions.length > 0) {
+            const lastSession = task.sessions[task.sessions.length - 1];
+            if (!lastSession.end) {
+                lastSession.end = Date.now();
+                task.actualMinutes += Math.round((lastSession.end - lastSession.start) / 60000);
+            }
+        }
+        task.status = TaskStatus.Completed;
+        task.completedAt = Date.now();
+    } else {
+        task.status = TaskStatus.Assigned;
+        task.completedAt = undefined;
     }
+    task.completed = isCompleting;
+    saveDb(db);
     return db;
   },
 
-  async addTask(campusId: CampusId, category: TaskCategory, description: string): Promise<AllCampusData> {
-    await delay(FAKE_LATENCY);
+  async startTask(campusId: CampusId, category: TaskCategory, taskId: string): Promise<AllCampusData> {
+      const db = getDb();
+      Object.keys(db[campusId].tasks).forEach(cat => {
+          db[campusId].tasks[cat as TaskCategory].forEach(t => {
+              if (t.status === TaskStatus.InProgress && t.id !== taskId) {
+                  const last = t.sessions[t.sessions.length - 1];
+                  if (last && !last.end) {
+                      last.end = Date.now();
+                      t.actualMinutes += Math.round((last.end - last.start) / 60000);
+                  }
+                  t.status = TaskStatus.Paused;
+              }
+          });
+      });
+
+      const task = db[campusId].tasks[category].find(t => t.id === taskId);
+      if (task) {
+          task.status = TaskStatus.InProgress;
+          task.sessions.push({ start: Date.now() });
+          task.startedAt = task.startedAt || Date.now();
+      }
+      saveDb(db);
+      return db;
+  },
+
+  async pauseTask(campusId: CampusId, category: TaskCategory, taskId: string): Promise<AllCampusData> {
+      const db = getDb();
+      const task = db[campusId].tasks[category].find(t => t.id === taskId);
+      if (task && task.status === TaskStatus.InProgress) {
+          const last = task.sessions[task.sessions.length - 1];
+          if (last && !last.end) {
+              last.end = Date.now();
+              task.actualMinutes += Math.round((last.end - last.start) / 60000);
+          }
+          task.status = TaskStatus.Paused;
+      }
+      saveDb(db);
+      return db;
+  },
+
+  async addTask(campusId: CampusId, category: TaskCategory, description: string, estMinutes: number = 0, priority: Priority = Priority.Medium): Promise<AllCampusData> {
     const db = getDb();
-    const campusData = db[campusId];
-    if (campusData && description.trim()) {
-        const newTask: Task = {
-            id: `${campusId.substring(0,2).toUpperCase()}-${category.substring(0,1).toUpperCase()}-${Date.now()}`,
-            description,
-            isFixed: false,
-            completed: false,
-        };
-        db[campusId].tasks[category].push(newTask);
-        saveDb(db);
-    }
+    const newTask: Task = {
+        id: `${campusId.substring(0,2).toUpperCase()}-${category.substring(0,1).toUpperCase()}-${Date.now().toString().slice(-4)}`,
+        description,
+        isFixed: false,
+        completed: false,
+        status: TaskStatus.Assigned,
+        priority,
+        estimatedMinutes: estMinutes,
+        actualMinutes: 0,
+        createdAt: Date.now(),
+        sessions: []
+    };
+    db[campusId].tasks[category].push(newTask);
+    saveDb(db);
     return db;
+  },
+
+  async logAttendance(campusId: CampusId, type: 'in' | 'out'): Promise<AllCampusData> {
+      const db = getDb();
+      const campus = db[campusId];
+      if (!campus) return db;
+      
+      // Use local date string for better tracking in user's timezone
+      const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
+      
+      if (!campus.attendance) campus.attendance = [];
+      
+      let record = campus.attendance.find(r => r.date === todayStr);
+      if (!record) {
+        record = { date: todayStr };
+        campus.attendance.push(record);
+      }
+
+      if (type === 'in' && !record.checkIn) {
+          record.checkIn = Date.now();
+      } else if (type === 'out' && record.checkIn && !record.checkOut) {
+          record.checkOut = Date.now();
+          record.totalWorkMinutes = Math.round((record.checkOut - record.checkIn) / 60000);
+      }
+      
+      saveDb(db);
+      return db;
   },
 
   async deleteTask(campusId: CampusId, category: TaskCategory, taskId: string): Promise<AllCampusData> {
-      await delay(FAKE_LATENCY);
       const db = getDb();
-      const campusData = db[campusId];
-      if (campusData) {
-          db[campusId].tasks[category] = campusData.tasks[category].filter(t => t.id !== taskId);
-          saveDb(db);
-      }
+      db[campusId].tasks[category] = db[campusId].tasks[category].filter(t => t.id !== taskId);
+      saveDb(db);
       return db;
   },
 
   async toggleTaskFix(campusId: CampusId, category: TaskCategory, taskId: string): Promise<AllCampusData> {
-      await delay(FAKE_LATENCY / 2);
       const db = getDb();
-      const campusData = db[campusId];
-      if (campusData) {
-          db[campusId].tasks[category] = campusData.tasks[category].map(t =>
-              t.id === taskId ? { ...t, isFixed: !t.isFixed } : t
-          );
-          saveDb(db);
-      }
+      const task = db[campusId].tasks[category].find(t => t.id === taskId);
+      if (task) task.isFixed = !task.isFixed;
+      saveDb(db);
       return db;
   },
 
   async markAllTodayComplete(campusId: CampusId): Promise<AllCampusData> {
-      await delay(FAKE_LATENCY);
       const db = getDb();
-      const campusData = db[campusId];
-      if (campusData) {
-          db[campusId].tasks.today = campusData.tasks.today.map(t => ({...t, completed: true}));
-          saveDb(db);
-      }
+      db[campusId].tasks.today = db[campusId].tasks.today.map(t => ({
+          ...t, 
+          completed: true, 
+          status: TaskStatus.Completed,
+          completedAt: Date.now()
+      }));
+      saveDb(db);
       return db;
   },
   
-  // --- Bill Mutations ---
   async toggleBill(campusId: CampusId, billIndex: number): Promise<AllCampusData> {
-    await delay(FAKE_LATENCY / 2);
     const db = getDb();
-    const campusData = db[campusId];
-    if (campusData && campusData.bills[billIndex]) {
-        campusData.bills[billIndex].paid = !campusData.bills[billIndex].paid;
-        saveDb(db);
-    }
+    db[campusId].bills[billIndex].paid = !db[campusId].bills[billIndex].paid;
+    saveDb(db);
     return db;
   },
 
   async attachBill(campusId: CampusId, billIndex: number, fileUrl: string): Promise<AllCampusData> {
-      await delay(FAKE_LATENCY);
       const db = getDb();
-      const campusData = db[campusId];
-      if (campusData && campusData.bills[billIndex]) {
-          campusData.bills[billIndex].attachment = fileUrl;
-          saveDb(db);
-      }
+      db[campusId].bills[billIndex].attachment = fileUrl;
+      saveDb(db);
       return db;
   },
 
   async deleteAttachment(campusId: CampusId, billIndex: number): Promise<AllCampusData> {
-      await delay(FAKE_LATENCY);
       const db = getDb();
-      const campusData = db[campusId];
-      if (campusData && campusData.bills[billIndex]) {
-          delete campusData.bills[billIndex].attachment;
-          saveDb(db);
-      }
+      delete db[campusId].bills[billIndex].attachment;
+      saveDb(db);
       return db;
   },
 
   async addBill(campusId: CampusId, billData: Omit<Bill, 'paid' | 'attachment'>): Promise<AllCampusData> {
-    await delay(FAKE_LATENCY);
     const db = getDb();
-    const campusData = db[campusId];
-    if (campusData && billData.type.trim() && billData.account.trim()) {
-        const newBill: Bill = {
-            ...billData,
-            paid: false,
-        };
-        db[campusId].bills.push(newBill);
-        saveDb(db);
-    }
+    db[campusId].bills.push({ ...billData, paid: false });
+    saveDb(db);
     return db;
   },
 
-  // --- Reset & Backup/Restore Mutations ---
   async resetCampus(campusId: CampusId): Promise<AllCampusData> {
-      await delay(FAKE_LATENCY);
       const db = getDb();
       db[campusId] = JSON.parse(JSON.stringify(INITIAL_DATA[campusId]));
       saveDb(db);
@@ -157,75 +218,47 @@ export const databaseService = {
   },
 
   async resetAll(): Promise<AllCampusData> {
-      await delay(FAKE_LATENCY * 2);
       cloudStore.reset();
       syncChannel.postMessage({ type: 'DATA_UPDATED' });
-      syncChannel.postMessage({ type: 'USERS_UPDATED' });
       return cloudStore.getData();
   },
 
   async backupData(): Promise<void> {
-    await delay(FAKE_LATENCY);
     const data = getDb();
     const users = getUsersFromDb();
-    const backup = { data, users };
-    const jsonString = JSON.stringify(backup, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify({ data, users }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const date = new Date().toISOString().slice(0, 10);
     a.href = url;
-    a.download = `fiqh-academy-backup-${date}.json`;
-    document.body.appendChild(a);
+    a.download = `fiqh-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   },
 
   async restoreData(jsonContent: string): Promise<void> {
-    if (!window.confirm("Are you sure you want to restore data? This will overwrite all current data.")) {
-        return;
-    }
-    await delay(FAKE_LATENCY * 2);
     const backup = JSON.parse(jsonContent);
-    if (backup && backup.data && backup.users) {
+    if (backup.data && backup.users) {
         cloudStore.setData(backup.data);
         cloudStore.setUsers(backup.users);
         syncChannel.postMessage({ type: 'DATA_UPDATED' });
-        syncChannel.postMessage({ type: 'USERS_UPDATED' });
-    } else {
-        throw new Error("Invalid backup file format.");
     }
   },
 
-  // --- User Mutations ---
   async addUser(newUser: Omit<User, 'id'>): Promise<User[]> {
-      await delay(FAKE_LATENCY);
       const users = getUsersFromDb();
-      const userWithId = { ...newUser, id: Date.now(), password: newUser.password || 'password' };
-      users.push(userWithId);
+      users.push({ ...newUser, id: Date.now() });
       saveUsersToDb(users);
       return users;
   },
 
   async updateUser(updatedUser: User): Promise<User[]> {
-      await delay(FAKE_LATENCY);
       const users = getUsersFromDb();
       const index = users.findIndex(u => u.id === updatedUser.id);
-      if (index !== -1) {
-          if (!updatedUser.password) {
-              updatedUser.password = users[index].password;
-          }
-          users[index] = updatedUser;
-          saveUsersToDb(users);
-      }
+      if (index !== -1) { users[index] = updatedUser; saveUsersToDb(users); }
       return users;
   },
   
   async deleteUser(userId: number): Promise<User[]> {
-      await delay(FAKE_LATENCY);
-      let users = getUsersFromDb();
-      users = users.filter(u => u.id !== userId);
+      let users = getUsersFromDb().filter(u => u.id !== userId);
       saveUsersToDb(users);
       return users;
   }

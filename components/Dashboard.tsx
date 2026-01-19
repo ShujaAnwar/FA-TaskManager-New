@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
-import { User, Theme, CampusId, AllCampusData, TaskCategory, UserRole, Bill } from '../types';
+import { User, Theme, CampusId, AllCampusData, TaskCategory, UserRole, Bill, Task } from '../types';
 import { databaseService } from '../services/database';
+import { reportingService } from '../services/reporting';
 import DashboardHeader from './DashboardHeader';
 import IslamicHeader from './IslamicHeader';
 import StatsOverview from './StatsOverview';
@@ -36,7 +38,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchData = async () => {
-    // No loading spinner on subsequent fetches to provide a smoother sync experience
     if (isLoading) setIsLoading(true);
     const data = await databaseService.getAllData();
     setAllData(data);
@@ -45,34 +46,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
 
   useEffect(() => {
     fetchData();
-
     const syncChannel = new BroadcastChannel('dashboard-sync');
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === 'DATA_UPDATED') {
         databaseService.getAllData().then(setAllData);
       }
     };
-
     syncChannel.addEventListener('message', handleMessage);
-
     return () => {
       syncChannel.removeEventListener('message', handleMessage);
       syncChannel.close();
     };
   }, []);
   
-  const handleSelectCampus = (campusId: CampusId) => {
-    setActiveCampus(campusId);
-  };
-  
   const onToggleTask = async (campusId: CampusId, category: TaskCategory, taskId: string) => {
     const updatedData = await databaseService.toggleTask(campusId, category, taskId);
     setAllData(updatedData);
   };
 
-  const onAddTask = async (campusId: CampusId, category: TaskCategory, description: string) => {
-    if (!description.trim()) return;
-    const updatedData = await databaseService.addTask(campusId, category, description);
+  const onAddTask = async (campusId: CampusId, category: TaskCategory, description: string, estMinutes: number = 0) => {
+    const updatedData = await databaseService.addTask(campusId, category, description, estMinutes);
     setAllData(updatedData);
   };
   
@@ -86,6 +79,28 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
     setAllData(updatedData);
   };
 
+  const onStartTask = async (campusId: CampusId, category: TaskCategory, taskId: string) => {
+    const updatedData = await databaseService.startTask(campusId, category, taskId);
+    setAllData(updatedData);
+  };
+
+  const onPauseTask = async (campusId: CampusId, category: TaskCategory, taskId: string) => {
+    const updatedData = await databaseService.pauseTask(campusId, category, taskId);
+    setAllData(updatedData);
+  };
+
+  const onLogAttendance = async (campusId: CampusId, type: 'in' | 'out') => {
+      const updatedData = await databaseService.logAttendance(campusId, type);
+      setAllData(updatedData);
+  };
+
+  const onGenerateReport = (type: 'Daily' | 'Monthly') => {
+      if (!allData || !activeCampus || activeCampus === CampusId.ControlPanel) return;
+      const campusData = allData[activeCampus];
+      const tasks = Object.values(campusData.tasks).flat() as Task[];
+      reportingService.generatePDF(user, activeCampus, tasks, type, campusData.attendance);
+  };
+
   const onToggleBill = async (campusId: CampusId, billIndex: number) => {
     const updatedData = await databaseService.toggleBill(campusId, billIndex);
     setAllData(updatedData);
@@ -94,8 +109,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
   const onAttachBill = (campusId: CampusId, billIndex: number, file: File) => {
       const reader = new FileReader();
       reader.onload = async (event) => {
-          const fileUrl = event.target?.result as string;
-          const updatedData = await databaseService.attachBill(campusId, billIndex, fileUrl);
+          const updatedData = await databaseService.attachBill(campusId, billIndex, event.target?.result as string);
           setAllData(updatedData);
       };
       reader.readAsDataURL(file);
@@ -112,16 +126,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
   };
 
   const onResetAll = async () => {
-    if (window.confirm("Are you sure you want to reset all data? This cannot be undone.")) {
+    if (window.confirm("Reset all data?")) {
       const updatedData = await databaseService.resetAll();
-      const updatedUsers = await databaseService.getAllUsers();
       setAllData(updatedData);
-      setUsers(updatedUsers);
     }
   };
 
   const onResetCampus = async (campusId: CampusId) => {
-    if (window.confirm(`Are you sure you want to reset data for ${campusId} campus?`)) {
+    if (window.confirm(`Reset ${campusId}?`)) {
       const updatedData = await databaseService.resetCampus(campusId);
       setAllData(updatedData);
     }
@@ -132,71 +144,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
     setAllData(updatedData);
   };
 
-  const onAddUser = async (user: Omit<User, 'id'>) => {
-      const updatedUsers = await databaseService.addUser(user);
-      setUsers(updatedUsers);
-  };
-
-  const onUpdateUser = async (updatedUser: User) => {
-      const updatedUsers = await databaseService.updateUser(updatedUser);
-      setUsers(updatedUsers);
-  };
-  
-  const onDeleteUser = async (userId: number) => {
-      if (user.id === userId) {
-          alert("You cannot delete your own account.");
-          return;
-      }
-      if (window.confirm("Are you sure you want to delete this user?")) {
-        const updatedUsers = await databaseService.deleteUser(userId);
-        setUsers(updatedUsers);
-      }
-  };
-  
-  const handleBackup = async () => {
-    await databaseService.backupData();
-  };
-
+  const onAddUser = async (u: Omit<User, 'id'>) => setUsers(await databaseService.addUser(u));
+  const onUpdateUser = async (u: User) => setUsers(await databaseService.updateUser(u));
+  const onDeleteUser = async (id: number) => setUsers(await databaseService.deleteUser(id));
+  const handleBackup = async () => await databaseService.backupData();
   const handleRestore = async (file: File) => {
-      if (!file) return;
       const reader = new FileReader();
-      reader.onload = async (event) => {
-          try {
-              const jsonContent = event.target?.result as string;
-              await databaseService.restoreData(jsonContent);
-              // Refetch all data to update the UI
-              fetchData();
-              databaseService.getAllUsers().then(setUsers);
-              alert("Data restored successfully!");
-              setIsSettingsOpen(false);
-          } catch (error) {
-              console.error("Restore failed:", error);
-              alert("Failed to restore data. The backup file may be invalid.");
-          }
+      reader.onload = async (e) => {
+          await databaseService.restoreData(e.target?.result as string);
+          fetchData();
+          databaseService.getAllUsers().then(setUsers);
       };
       reader.readAsText(file);
   };
 
-
-  const campusesForUser = user.role === UserRole.Admin 
-      ? Object.values(CampusId) 
-      : [user.campusId];
-      
-  if (user.role === UserRole.Admin && !campusesForUser.includes(CampusId.ControlPanel)) {
-    campusesForUser.push(CampusId.ControlPanel);
-  }
-
+  const campusesForUser = user.role === UserRole.Admin ? Object.values(CampusId) : [user.campusId];
+  if (user.role === UserRole.Admin && !campusesForUser.includes(CampusId.ControlPanel)) campusesForUser.push(CampusId.ControlPanel);
   const campusData = allData ? allData[activeCampus] : null;
 
   if (isLoading || !allData) {
-      return (
-          <div className="flex items-center justify-center min-h-screen" style={{ color: 'var(--text-color)' }}>
-              <div className="flex flex-col items-center">
-                  <i className="fas fa-spinner fa-spin fa-3x"></i>
-                  <p className="mt-4 text-lg">Loading Dashboard...</p>
-              </div>
-          </div>
-      );
+      return <div className="flex items-center justify-center min-h-screen"><i className="fas fa-spinner fa-spin fa-3x"></i></div>;
   }
 
   return (
@@ -205,33 +172,24 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
           <div className="max-w-7xl mx-auto rounded-xl shadow-2xl" style={{ backgroundColor: 'var(--card-bg)' }}>
               <IslamicHeader />
               <div className="p-4">
-                  <DashboardHeader 
-                      user={user} 
-                      onLogout={onLogout} 
-                      onSearch={setSearchTerm} 
-                      onOpenSettings={() => setIsSettingsOpen(true)}
-                      isCloudSyncOn={isCloudSyncOn}
-                  />
+                  <DashboardHeader user={user} onLogout={onLogout} onSearch={setSearchTerm} onOpenSettings={() => setIsSettingsOpen(true)} isCloudSyncOn={isCloudSyncOn} />
                   <StatsOverview allData={allData} />
 
                   {user.role === UserRole.Admin && (
                     <div className="my-4 border-t-2 pt-4" style={{ borderColor: 'var(--cream-dark)' }}>
-                        <AllCampusesOverview allData={allData} onSelectCampus={handleSelectCampus} />
+                        <AllCampusesOverview allData={allData} onSelectCampus={setActiveCampus} />
                     </div>
                   )}
 
-                  {searchTerm ? (
-                      <SearchResults allData={allData} searchTerm={searchTerm} />
-                  ) : (
+                  {searchTerm ? <SearchResults allData={allData} searchTerm={searchTerm} /> : (
                       <>
-                          <CampusTabs campuses={campusesForUser} activeCampus={activeCampus} onSelectCampus={handleSelectCampus} />
+                          <CampusTabs campuses={campusesForUser} activeCampus={activeCampus} onSelectCampus={setActiveCampus} />
                           {activeCampus === CampusId.ControlPanel ? (
                               <ControlPanel users={users} currentUser={user} onAddUser={onAddUser} onUpdateUser={onUpdateUser} onDeleteUser={onDeleteUser} />
                           ) : (
                               campusData && <CampusView
                                   campusId={activeCampus}
                                   campusData={campusData}
-                                  allCampusData={activeCampus === CampusId.Main ? allData : undefined}
                                   userRole={user.role}
                                   onAddTask={onAddTask}
                                   onToggleTask={onToggleTask}
@@ -244,24 +202,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
                                   onAttachBill={onAttachBill}
                                   onDeleteAttachment={onDeleteAttachment}
                                   onAddBill={onAddBill}
+                                  onStartTask={onStartTask}
+                                  onPauseTask={onPauseTask}
+                                  onGenerateReport={onGenerateReport}
+                                  onLogAttendance={onLogAttendance}
                               />
                           )}
                       </>
                   )}
               </div>
           </div>
-          {isSettingsOpen && (
-              <SettingsModal
-                  onClose={() => setIsSettingsOpen(false)}
-                  onBackup={handleBackup}
-                  onRestore={handleRestore}
-                  currentTheme={currentTheme}
-                  lastLightTheme={lastLightTheme}
-                  onThemeChange={onThemeChange}
-                  isCloudSyncOn={isCloudSyncOn}
-                  onToggleCloudSync={() => setIsCloudSyncOn(prev => !prev)}
-              />
-          )}
+          {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} onBackup={handleBackup} onRestore={handleRestore} currentTheme={currentTheme} lastLightTheme={lastLightTheme} onThemeChange={onThemeChange} isCloudSyncOn={isCloudSyncOn} onToggleCloudSync={() => setIsCloudSyncOn(!isCloudSyncOn)} />}
       </div>
   );
 };

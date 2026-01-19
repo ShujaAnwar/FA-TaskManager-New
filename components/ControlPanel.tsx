@@ -47,6 +47,28 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ users, currentUser, onAddUs
         handleCloseModal();
     }
 
+    const handleShareCredentials = async (user: User) => {
+        const shareText = `Fiqh Academy Task Manager Credentials:\n\nName: ${user.name}\nUsername: ${user.username}\nPassword: ${user.password}\n\nLogin here: ${window.location.origin}${window.location.pathname}`;
+        
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Fiqh Academy Credentials',
+                    text: shareText,
+                });
+            } catch (err) {
+                console.error("Share failed", err);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(shareText);
+                alert(`Credentials for ${user.name} copied to clipboard!`);
+            } catch (err) {
+                alert("Failed to copy credentials. Please try again.");
+            }
+        }
+    };
+
     return (
       <div className="p-4 rounded-xl shadow-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
         <div className="flex justify-between items-center mb-4">
@@ -64,7 +86,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ users, currentUser, onAddUs
                 <th scope="col" className="px-6 py-3">Role</th>
                 <th scope="col" className="px-6 py-3">Campus</th>
                 <th scope="col" className="px-6 py-3">Password</th>
-                <th scope="col" className="px-6 py-3">Actions</th>
+                <th scope="col" className="px-6 py-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -75,16 +97,26 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ users, currentUser, onAddUs
                   <td className="px-6 py-4 capitalize">{user.role.replace('_', ' ')}</td>
                   <td className="px-6 py-4 capitalize">{user.campusId}</td>
                   <td className="px-6 py-4"><PasswordDisplay value={user.password || ''} /></td>
-                  <td className="px-6 py-4 flex gap-4">
-                    <button onClick={() => handleOpenModal(user)} className="font-medium text-blue-600 hover:underline">Edit</button>
-                    <button 
-                        onClick={() => onDeleteUser(user.id)} 
-                        disabled={user.id === currentUser.id}
-                        className="font-medium text-red-600 hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
-                        aria-disabled={user.id === currentUser.id}
-                    >
-                        Delete
-                    </button>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-4">
+                        <button 
+                            onClick={() => handleShareCredentials(user)} 
+                            className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1"
+                            title="Share Credentials"
+                        >
+                            <i className="fas fa-share-nodes"></i>
+                            <span className="hidden sm:inline">Share</span>
+                        </button>
+                        <button onClick={() => handleOpenModal(user)} className="font-medium text-blue-600 hover:underline">Edit</button>
+                        <button 
+                            onClick={() => onDeleteUser(user.id)} 
+                            disabled={user.id === currentUser.id}
+                            className="font-medium text-red-600 hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
+                            aria-disabled={user.id === currentUser.id}
+                        >
+                            Delete
+                        </button>
+                    </div>
                   </td>
                 </tr>
               ))}

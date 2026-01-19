@@ -12,6 +12,26 @@ export enum CampusId {
   ControlPanel = 'control_panel',
 }
 
+export enum TaskStatus {
+  Assigned = 'assigned',
+  InProgress = 'in_progress',
+  Paused = 'paused',
+  Completed = 'completed',
+  Overdue = 'overdue'
+}
+
+export enum Priority {
+  Low = 'low',
+  Medium = 'medium',
+  High = 'high',
+  Urgent = 'urgent'
+}
+
+export interface TimeSession {
+  start: number;
+  end?: number;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -19,6 +39,14 @@ export interface User {
   name: string;
   role: UserRole;
   campusId: CampusId;
+  activeTaskId?: string; // Exclusivity rule
+}
+
+export interface AttendanceRecord {
+  checkIn?: number;
+  checkOut?: number;
+  date: string; // YYYY-MM-DD
+  totalWorkMinutes?: number;
 }
 
 export interface Task {
@@ -26,6 +54,17 @@ export interface Task {
   description: string;
   isFixed: boolean;
   completed: boolean;
+  status: TaskStatus;
+  priority: Priority;
+  dueDate?: string;
+  estimatedMinutes: number;
+  actualMinutes: number;
+  timerStartedAt?: number;
+  sessions: TimeSession[];
+  // Date-driven reporting fields
+  createdAt: number;
+  startedAt?: number;
+  completedAt?: number;
 }
 
 export enum TaskCategory {
@@ -51,6 +90,7 @@ export interface CampusData {
     [TaskCategory.Monthly]: Task[];
   };
   bills: Bill[];
+  attendance: AttendanceRecord[];
 }
 
 export type AllCampusData = {
