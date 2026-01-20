@@ -10,34 +10,54 @@ interface TaskItemProps {
     onToggleFix: () => void;
     onStart: () => void;
     onPause: () => void;
+    onUpdate?: (updates: Partial<Task>) => void;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete, onToggleFix, onStart, onPause }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete, onToggleFix, onStart, onPause, onUpdate }) => {
     const [liveMinutes, setLiveMinutes] = useState(0);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState(task.description);
 
     useEffect(() => {
         let interval: number;
         if (task.status === TaskStatus.InProgress && task.timerStartedAt) {
-            interval = window.setInterval(() => {
+            const update = () => {
                 const elapsed = Date.now() - (task.timerStartedAt || 0);
                 setLiveMinutes(Math.floor(elapsed / 60000));
-            }, 10000); // Check every 10s
+            };
+            update();
+            interval = window.setInterval(update, 10000); 
         } else {
             setLiveMinutes(0);
         }
         return () => clearInterval(interval);
     }, [task.status, task.timerStartedAt]);
 
+    const handleSave = () => {
+        if (onUpdate && editValue.trim()) {
+            onUpdate({ description: editValue });
+            setIsEditing(false);
+        }
+    };
+
     const displayActual = (task.actualMinutes || 0) + liveMinutes;
-    const efficiency = task.estimatedMinutes > 0 && task.status === TaskStatus.Completed
-        ? Math.round((task.estimatedMinutes / Math.max(1, task.actualMinutes)) * 100)
-        : null;
+
+    const getStatusLabel = () => {
+        switch (task.status) {
+            case TaskStatus.InProgress: return 'In Progress';
+            case TaskStatus.Paused: return 'Paused';
+            case TaskStatus.Completed: return 'Completed';
+            case TaskStatus.Assigned: return 'Pending';
+            default: return task.status.toUpperCase();
+        }
+    };
 
     const getStatusColor = () => {
         switch (task.status) {
             case TaskStatus.InProgress: return 'bg-green-500';
-            case TaskStatus.Paused: return 'bg-yellow-500';
+            case TaskStatus.Paused: return 'bg-yellow-500 text-black';
             case TaskStatus.Completed: return 'bg-blue-500';
+            case TaskStatus.Assigned: return 'bg-gray-400';
             default: return 'bg-gray-400';
         }
     };
@@ -51,14 +71,8 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete,
         }
     };
 
-    const getEfficiencyColor = (eff: number) => {
-        if (eff >= 100) return 'text-green-600';
-        if (eff >= 90) return 'text-blue-600';
-        return 'text-red-600';
-    };
-
     return (
-        <div className={`flex flex-col p-2 border-b transition-colors hover:bg-white/40 ${task.priority === Priority.Urgent && !task.completed ? 'border-l-4 border-l-red-600' : ''}`} style={{ borderColor: 'var(--cream-dark)', color: 'var(--text-color)' }}>
+        <div className={`flex flex-col p-2 border-b transition-colors hover:bg-white/40 ${task.priority === Priority.Urgent && !task.completed ? 'border-l-4 border-l-red-600' : ''} ${task.completed ? 'bg-gray-50/10' : ''}`} style={{ borderColor: 'var(--cream-dark)', color: 'var(--text-color)' }}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center flex-grow min-w-0">
                     <input
@@ -67,25 +81,34 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete,
                         onChange={onToggle}
                         className="mr-2 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
                     />
-                    <div className={`flex flex-col min-w-0 ${task.completed ? 'opacity-50' : ''}`}>
+                    <div className={`flex flex-col min-w-0 ${task.completed ? 'opacity-60' : ''}`}>
                          <div className="flex items-center gap-1.5 flex-wrap">
                             {getPriorityBadge(task.priority)}
                             {task.isFixed && <i className="fas fa-lock text-[10px] text-gray-400"></i>}
                             <span className="font-bold text-[10px] whitespace-nowrap" style={{ color: 'var(--primary)'}}>{task.id}</span>
-                            <span className={`text-xs font-semibold break-words ${task.completed ? 'line-through' : ''}`}>{task.description}</span>
+                            
+                            {isEditing ? (
+                                <div className="flex gap-1 items-center flex-grow">
+                                    <input 
+                                        autoFocus
+                                        className="text-xs p-1 border rounded w-full"
+                                        value={editValue}
+                                        onChange={(e) => setEditValue(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                                        onBlur={handleSave}
+                                    />
+                                </div>
+                            ) : (
+                                <span className={`text-xs font-semibold break-words ${task.completed ? 'line-through' : ''}`}>{task.description}</span>
+                            )}
                          </div>
                          <div className="flex items-center gap-2 mt-1">
                             <span className={`text-[9px] text-white px-1.5 rounded-full uppercase font-bold ${getStatusColor()}`}>
-                                {task.status.replace('_', ' ')}
+                                {getStatusLabel()}
                             </span>
                             <span className="text-[9px] text-gray-500 font-mono">
                                 Est: {task.estimatedMinutes}m | Act: {displayActual}m
                             </span>
-                            {efficiency !== null && (
-                                <span className={`text-[9px] font-bold ${getEfficiencyColor(efficiency)}`}>
-                                    Eff: {efficiency}%
-                                </span>
-                            )}
                          </div>
                     </div>
                 </div>
@@ -104,6 +127,9 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete,
                             )}
                         </>
                     )}
+                    <button onClick={() => setIsEditing(!isEditing)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded">
+                        <i className={`fas ${isEditing ? 'fa-check text-green-600' : 'fa-edit'} text-xs`}></i>
+                    </button>
                     <button onClick={onToggleFix} className="p-1.5 text-gray-400 hover:text-blue-600 rounded" title="Fix/Unfix">
                         <i className={`fas fa-thumbtack text-xs ${task.isFixed ? 'text-blue-600' : ''}`}></i>
                     </button>

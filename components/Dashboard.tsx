@@ -73,6 +73,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
     setAllData(updatedData);
   };
 
+  const onUpdateTask = async (campusId: CampusId, category: TaskCategory, taskId: string, updates: Partial<Task>) => {
+    const updatedData = await databaseService.updateTask(campusId, category, taskId, updates);
+    setAllData(updatedData);
+  };
+
   const onAddTask = async (campusId: CampusId, category: TaskCategory, description: string, estMinutes: number = 0, priority: Priority = Priority.Medium) => {
     const updatedData = await databaseService.addTask(campusId, category, description, estMinutes, priority);
     setAllData(updatedData);
@@ -103,16 +108,21 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
       setAllData(updatedData);
   };
 
-  const onGenerateReport = (type: 'Daily' | 'Monthly') => {
+  const onGenerateReport = (type: 'Daily' | 'Monthly', fromDate?: string, tillDate?: string) => {
       if (!allData || !activeCampus || activeCampus === CampusId.ControlPanel) return;
       const campusData = allData[activeCampus];
       if (!campusData) return;
       const tasks = Object.values(campusData.tasks).flat() as Task[];
-      reportingService.generatePDF(user, activeCampus, tasks, type, campusData.attendance);
+      reportingService.generatePDF(user, activeCampus, tasks, type, campusData.attendance, fromDate, tillDate);
   };
 
   const onToggleBill = async (campusId: CampusId, billIndex: number) => {
     const updatedData = await databaseService.toggleBill(campusId, billIndex);
+    setAllData(updatedData);
+  };
+
+  const onUpdateBill = async (campusId: CampusId, billIndex: number, updates: Partial<Bill>) => {
+    const updatedData = await databaseService.updateBill(campusId, billIndex, updates);
     setAllData(updatedData);
   };
 
@@ -206,11 +216,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, currentTheme, las
                                   campusId={activeCampus}
                                   campusData={campusData}
                                   userRole={user.role}
+                                  allCampusData={allData}
                                   onAddTask={onAddTask}
+                                  onUpdateTask={onUpdateTask}
                                   onToggleTask={onToggleTask}
                                   onDeleteTask={onDeleteTask}
                                   onToggleTaskFix={onToggleTaskFix}
                                   onToggleBill={onToggleBill}
+                                  onUpdateBill={onUpdateBill}
                                   onResetAll={onResetAll}
                                   onResetCampus={onResetCampus}
                                   onMarkAllTodayComplete={onMarkAllTodayComplete}

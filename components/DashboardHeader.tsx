@@ -13,6 +13,7 @@ interface DashboardHeaderProps {
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, onLogout, onSearch, onOpenSettings, isCloudSyncOn }) => {
     const { date, time } = useDateTime();
+    const isRemoteConnected = !!localStorage.getItem('remote-api-url');
 
     const handleShareMyLogin = async () => {
         const shareText = `Fiqh Academy Task Manager Credentials:\n\nName: ${user.name}\nUsername: ${user.username}\nPassword: (Use your secure password)\n\nLogin here: ${window.location.origin}${window.location.pathname}`;
@@ -50,16 +51,16 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, onLogout, onSea
                             <i className="fas fa-share-alt"></i>
                         </button>
                     </h2>
-                    <p className="text-sm opacity-80" style={{ color: 'var(--text-color)'}}>
-                        You are logged in as {user.role === 'admin' ? 'an Admin' : `a Campus User for ${user.campusId.charAt(0).toUpperCase() + user.campusId.slice(1)}`}.
-                    </p>
-                </div>
-                {isCloudSyncOn && (
-                     <div className="flex items-center gap-2 text-green-600" title="Data is actively syncing between open tabs on this computer.">
-                        <i className="fas fa-sync-alt"></i>
-                        <span className="text-xs font-semibold">Tab Sync</span>
+                    <div className="flex items-center gap-3">
+                        <p className="text-xs opacity-80" style={{ color: 'var(--text-color)'}}>
+                            {user.role === 'admin' ? 'Admin Access' : `${user.campusId.toUpperCase()} Campus Access`}
+                        </p>
+                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest ${isRemoteConnected ? 'bg-indigo-600 text-white' : 'bg-gray-400/20 text-gray-500'}`}>
+                            <i className={`fas ${isRemoteConnected ? 'fa-cloud' : 'fa-hdd'}`}></i>
+                            <span>{isRemoteConnected ? 'MongoDB Live' : 'Local Storage'}</span>
+                        </div>
                     </div>
-                )}
+                </div>
             </div>
             <div className="flex flex-col items-end text-sm text-right">
                 <div className="font-semibold" style={{ color: 'var(--primary)'}}>{date}</div>
@@ -69,7 +70,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, onLogout, onSea
                  <div className="relative flex-grow">
                     <input
                         type="search"
-                        placeholder="Search tasks or bills..."
+                        placeholder="Search dashboard..."
                         onChange={(e) => onSearch(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--cream-dark)' }}
@@ -82,7 +83,6 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, onLogout, onSea
                     onClick={onOpenSettings}
                     className="px-4 py-2 text-sm font-semibold text-white rounded-lg shadow transition hover:opacity-90 flex items-center gap-2"
                     style={{ backgroundColor: 'var(--primary)' }}
-                    aria-label="Open settings"
                 >
                     <i className="fas fa-cog"></i>
                 </button>

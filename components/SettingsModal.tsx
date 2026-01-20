@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+
+import React, { useRef, useState, useEffect } from 'react';
 import { Theme } from '../types';
 
 interface SettingsModalProps {
@@ -14,6 +15,7 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onBackup, onRestore, currentTheme, lastLightTheme, onThemeChange, isCloudSyncOn, onToggleCloudSync }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [apiUrl, setApiUrl] = useState(localStorage.getItem('remote-api-url') || '');
 
     const handleThemeToggle = () => {
         if (currentTheme.name === 'dark') {
@@ -33,9 +35,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onBackup, onRest
         }
     };
 
+    const handleSaveApiUrl = () => {
+        if (apiUrl.trim()) {
+            localStorage.setItem('remote-api-url', apiUrl.trim());
+            alert("Remote API URL saved! The app will now sync with MongoDB via your backend.");
+            window.location.reload(); // Reload to re-initialize service
+        } else {
+            localStorage.removeItem('remote-api-url');
+            alert("Remote API URL removed. App will use Local Storage.");
+            window.location.reload();
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 transition-opacity" onClick={onClose}>
-            <div className="p-6 rounded-xl shadow-xl w-full max-w-lg" style={{ backgroundColor: 'var(--card-bg)'}} onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 rounded-xl shadow-xl w-full max-w-lg overflow-y-auto max-h-[90vh]" style={{ backgroundColor: 'var(--card-bg)'}} onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold" style={{ color: 'var(--primary)'}}>
                         <i className="fas fa-cog mr-3"></i>Application Settings
@@ -46,6 +60,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onBackup, onRest
                 </div>
                 
                 <div className="space-y-6">
+                    {/* Database Integration Section */}
+                    <div className="p-4 rounded-lg border-2 border-indigo-500/20" style={{ backgroundColor: 'var(--cream-light)'}}>
+                         <div className="flex items-center gap-2 mb-3">
+                            <i className="fas fa-database text-indigo-600"></i>
+                            <h4 className="font-semibold text-md" style={{ color: 'var(--text-color)'}}>MongoDB Cloud Integration</h4>
+                         </div>
+                         <p className="text-[10px] text-gray-500 mb-3 leading-tight">
+                            Connect your dashboard to a persistent MongoDB backend. Enter your server URL below to enable global sync across all devices.
+                         </p>
+                         <div className="flex gap-2">
+                            <input 
+                                type="text" 
+                                value={apiUrl} 
+                                onChange={(e) => setApiUrl(e.target.value)} 
+                                placeholder="https://your-mongodb-api.vercel.app"
+                                className="flex-grow p-2 text-xs border rounded-md"
+                            />
+                            <button 
+                                onClick={handleSaveApiUrl}
+                                className="px-3 py-2 text-xs font-bold text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+                            >
+                                Connect
+                            </button>
+                         </div>
+                    </div>
+
                     {/* Appearance Section */}
                     <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--cream-light)'}}>
                          <h4 className="font-semibold mb-3 text-md" style={{ color: 'var(--text-color)'}}>Appearance</h4>
@@ -63,15 +103,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onBackup, onRest
                     
                     {/* Data Management Section */}
                     <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--cream-light)'}}>
-                        <h4 className="font-semibold mb-3 text-md" style={{ color: 'var(--text-color)'}}>Data Management</h4>
+                        <h4 className="font-semibold mb-3 text-md" style={{ color: 'var(--text-color)'}}>Local Data Tools</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <button onClick={onBackup} className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-md transition hover:opacity-90" style={{ backgroundColor: 'var(--primary)'}}>
                                 <i className="fas fa-download"></i>
-                                <span>Backup Data</span>
+                                <span>Export Local</span>
                             </button>
                              <button onClick={handleRestoreClick} className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-md transition hover:bg-green-700">
                                 <i className="fas fa-upload"></i>
-                                <span>Restore Data</span>
+                                <span>Import Local</span>
                             </button>
                             <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
                         </div>
@@ -83,10 +123,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onBackup, onRest
                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm">Sync Across Tabs <small className="opacity-70">(Same Computer)</small></span>
-                                <i 
-                                    className="fas fa-info-circle text-gray-400 cursor-help" 
-                                    title="This syncs data between tabs on the same computer. A backend server is needed to sync between different devices.">
-                                </i>
                             </div>
                             <label htmlFor="sync-toggle" className="flex items-center cursor-pointer">
                                 <div className="relative">

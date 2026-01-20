@@ -8,7 +8,7 @@ interface QuickActionsCardProps {
     onMarkAllTodayComplete: (campusId: CampusId) => void;
     onResetCampus: (campusId: CampusId) => void;
     onResetAll: () => void;
-    onGenerateReport: (type: 'Daily' | 'Monthly') => void;
+    onGenerateReport: (type: 'Daily' | 'Monthly', fromDate?: string, tillDate?: string) => void;
     onLogAttendance: (campusId: CampusId, type: 'in' | 'out') => void;
     attendance?: AttendanceRecord[];
 }
@@ -16,6 +16,13 @@ interface QuickActionsCardProps {
 const QuickActionsCard: React.FC<QuickActionsCardProps> = ({ campusId, userRole, onMarkAllTodayComplete, onResetCampus, onResetAll, onGenerateReport, onLogAttendance, attendance }) => {
     // Consistent use of local date string
     const todayStr = new Date().toLocaleDateString('en-CA');
+    
+    // Default date range: From start of current month to today
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA');
+    
+    const [fromDate, setFromDate] = useState(firstDayOfMonth);
+    const [tillDate, setTillDate] = useState(todayStr);
     const record = attendance?.find(a => a.date === todayStr);
     
     const [liveDuration, setLiveDuration] = useState('00:00:00');
@@ -95,29 +102,56 @@ const QuickActionsCard: React.FC<QuickActionsCardProps> = ({ campusId, userRole,
                 </div>
 
                 <div className="border-t pt-3" style={{ borderColor: 'var(--cream-dark)' }}>
-                    <h4 className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-2">Quick Commands</h4>
-                    <div className="grid grid-cols-1 gap-2">
-                        <button onClick={() => onMarkAllTodayComplete(campusId)} className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
-                            <i className="fas fa-check-double"></i>
-                            <span>Mark Today Complete</span>
+                    <h4 className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-2">Report Date Scope</h4>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="flex flex-col">
+                            <label className="text-[8px] font-bold text-gray-400 uppercase mb-0.5">From Date</label>
+                            <input 
+                                type="date" 
+                                value={fromDate} 
+                                onChange={(e) => setFromDate(e.target.value)}
+                                className="text-[10px] p-1 border rounded bg-white"
+                            />
+                        </div>
+                        <div className="flex flex-col">
+                            <label className="text-[8px] font-bold text-gray-400 uppercase mb-0.5">Till Date</label>
+                            <input 
+                                type="date" 
+                                value={tillDate} 
+                                onChange={(e) => setTillDate(e.target.value)}
+                                className="text-[10px] p-1 border rounded bg-white"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                        <button 
+                            onClick={() => onGenerateReport('Daily', fromDate, tillDate)} 
+                            className="flex items-center justify-center gap-2 p-3 text-[10px] font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20"
+                        >
+                            <i className="fas fa-file-pdf"></i>
+                            <span>Daily PDF</span>
                         </button>
-                        <button onClick={() => onResetCampus(campusId)} className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">
-                            <i className="fas fa-redo"></i>
-                            <span>Reset Campus Data</span>
+                        <button 
+                            onClick={() => onGenerateReport('Monthly', fromDate, tillDate)} 
+                            className="flex items-center justify-center gap-2 p-3 text-[10px] font-bold text-white bg-slate-800 rounded-xl hover:bg-slate-900 transition shadow-lg shadow-slate-500/20"
+                        >
+                            <i className="fas fa-calendar-check"></i>
+                            <span>History PDF</span>
                         </button>
                     </div>
                 </div>
 
                 <div className="border-t pt-3" style={{ borderColor: 'var(--cream-dark)' }}>
-                    <h4 className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-2">Sync & Reports</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                        <button onClick={() => onGenerateReport('Daily')} className="flex items-center justify-center gap-2 p-3 text-[10px] font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20">
-                            <i className="fas fa-file-pdf"></i>
-                            <span>Daily PDF</span>
+                    <h4 className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-2">Maintenance Commands</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                        <button onClick={() => onMarkAllTodayComplete(campusId)} className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
+                            <i className="fas fa-check-double"></i>
+                            <span>Mark All Today Complete</span>
                         </button>
-                        <button onClick={() => onGenerateReport('Monthly')} className="flex items-center justify-center gap-2 p-3 text-[10px] font-bold text-white bg-slate-800 rounded-xl hover:bg-slate-900 transition shadow-lg shadow-slate-500/20">
-                            <i className="fas fa-calendar-check"></i>
-                            <span>Monthly PDF</span>
+                        <button onClick={() => onResetCampus(campusId)} className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">
+                            <i className="fas fa-redo"></i>
+                            <span>Reset Campus Data</span>
                         </button>
                     </div>
                 </div>
