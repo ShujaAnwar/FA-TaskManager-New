@@ -15,12 +15,35 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
-      /* To support the Arabic font */
+      /* Support the Arabic font */
       .font-arabic {
         font-family: 'Noto Naskh Arabic', serif;
       }
       .dot {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Pulsing animations for High/Urgent tasks */
+      @keyframes pulse-red {
+        0% { background-color: rgba(239, 68, 68, 0.05); }
+        50% { background-color: rgba(239, 68, 68, 0.2); }
+        100% { background-color: rgba(239, 68, 68, 0.05); }
+      }
+      
+      @keyframes pulse-orange {
+        0% { background-color: rgba(245, 158, 11, 0.05); }
+        50% { background-color: rgba(245, 158, 11, 0.15); }
+        100% { background-color: rgba(245, 158, 11, 0.05); }
+      }
+
+      .animate-pulse-red {
+        animation: pulse-red 2s infinite ease-in-out;
+        border-left: 4px solid #dc2626 !important;
+      }
+
+      .animate-pulse-orange {
+        animation: pulse-orange 3s infinite ease-in-out;
+        border-left: 4px solid #f59e0b !important;
       }
     </style>
   <script type="importmap">

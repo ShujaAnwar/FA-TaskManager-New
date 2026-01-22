@@ -64,15 +64,26 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, userRole, onToggle, onDelete,
 
     const getPriorityBadge = (p: Priority) => {
         switch (p) {
-            case Priority.Urgent: return <span className="text-[8px] bg-red-600 text-white px-1 rounded font-black uppercase">Urgent</span>;
-            case Priority.High: return <span className="text-[8px] bg-orange-500 text-white px-1 rounded font-black uppercase">High</span>;
+            case Priority.Urgent: return <span className="text-[8px] bg-red-600 text-white px-1 rounded font-black uppercase shadow-sm">Urgent</span>;
+            case Priority.High: return <span className="text-[8px] bg-orange-500 text-white px-1 rounded font-black uppercase shadow-sm">High</span>;
             case Priority.Low: return <span className="text-[8px] bg-gray-400 text-white px-1 rounded font-black uppercase">Low</span>;
             default: return null;
         }
     };
 
+    // Priority-based pulsing classes
+    const getUrgencyClass = () => {
+        if (task.completed) return '';
+        if (task.priority === Priority.Urgent) return 'animate-pulse-red';
+        if (task.priority === Priority.High) return 'animate-pulse-orange';
+        return '';
+    };
+
     return (
-        <div className={`flex flex-col p-2 border-b transition-colors hover:bg-white/40 ${task.priority === Priority.Urgent && !task.completed ? 'border-l-4 border-l-red-600' : ''} ${task.completed ? 'bg-gray-50/10' : ''}`} style={{ borderColor: 'var(--cream-dark)', color: 'var(--text-color)' }}>
+        <div 
+            className={`flex flex-col p-2 border-b transition-all duration-300 hover:bg-white/40 ${getUrgencyClass()} ${task.completed ? 'bg-gray-50/10' : ''}`} 
+            style={{ borderColor: 'var(--cream-dark)', color: 'var(--text-color)' }}
+        >
             <div className="flex items-center justify-between">
                 <div className="flex items-center flex-grow min-w-0">
                     <input
